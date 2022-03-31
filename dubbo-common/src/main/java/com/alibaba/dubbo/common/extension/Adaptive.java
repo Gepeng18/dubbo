@@ -53,6 +53,10 @@ public @interface Adaptive {
      * dot '.', for example: for {@code com.alibaba.dubbo.xxx.YyyInvokerWrapper}, its default name is
      * <code>String[] {"yyy.invoker.wrapper"}</code>. This name will be used to search for parameter from URL.
      *
+     * 如果标注在接口的方法上时，可以根据参数动态获取实现类，在第一次getExtension时，会自动生成和编译一个动态的Adaptive类，达到动态实现类的效果
+     * 如果标注在实现类上的时候主要是为了直接固定对应的实现而不需要动态生成代码实现。
+     * 该注解有一个参数value，是个string数组类型，表示可以通过多个元素依次查找实现类
+     *
      * @return parameter key names in URL
      */
     String[] value() default {};

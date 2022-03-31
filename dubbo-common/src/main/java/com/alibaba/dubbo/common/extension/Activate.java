@@ -47,6 +47,9 @@ public @interface Activate {
      * Activate the current extension when one of the groups matches. The group passed into
      * {@link ExtensionLoader#getActivateExtension(URL, String, String)} will be used for matching.
      *
+     * 表示URL中的分组如果匹配的话就激活
+     * 在我们服务提供者就是provider，然后服务消费者那边就是consumer，你没配置组也就算了，如果你配置了组，就会把不是你这个组的给过滤掉。
+     *
      * @return group names to match
      * @see ExtensionLoader#getActivateExtension(URL, String, String)
      */
@@ -59,6 +62,12 @@ public @interface Activate {
      * there's either <code>cache</code> or <code>validation</code> key appeared in the URL's parameters.
      * </p>
      *
+     * 查找URL中如果含有该key值，就会激活
+     * 这个参数也是个数组形式，他会查找url中如果包含该key值就会，就会激活。咱们在
+     * {@link ExtensionLoader#getActivateExtension(com.alibaba.dubbo.common.URL, java.lang.String[], java.lang.String)}
+     * 方法中也看到了判断中有个isActive(activate, url) ，
+     * 其实这个方法就是把activate的value值拿出来，跟url的所有key做比较，相等或者是.key ，然后url对应的value还不能是null，这才返回true。
+     *
      * @return URL parameter keys
      * @see ExtensionLoader#getActivateExtension(URL, String)
      * @see ExtensionLoader#getActivateExtension(URL, String, String)
@@ -68,6 +77,9 @@ public @interface Activate {
     /**
      * Relative ordering info, optional
      *
+     * 填写扩展点列表，表示哪些扩展点需要在本扩展点的前面
+     * 这两个属性在排序的时候用到了
+     *
      * @return extension list which should be put before the current one
      */
     String[] before() default {};
@@ -75,12 +87,14 @@ public @interface Activate {
     /**
      * Relative ordering info, optional
      *
+     *  表示哪些扩展点需要在本扩展点的后面
      * @return extension list which should be put after the current one
      */
     String[] after() default {};
 
     /**
      * Absolute ordering info, optional
+     * 这个也是在排序的时候使用，先按照 before跟after排，这个排好了直接返回了，最后才用这个order排序。
      *
      * @return absolute ordering info
      */

@@ -22,6 +22,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * 在createExtension的时候表示不自动注入。
+ * 在ExtensionLoader 类中，创建子类实现的时候会自动注入由ExtensionLoader管理的类，就会调用 injectExtension(instance)方法，
+ * 然后在方法遍历的时候会检测有没有该DisableInject注解，如果有的话就会跳过，不会自动注入。
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
