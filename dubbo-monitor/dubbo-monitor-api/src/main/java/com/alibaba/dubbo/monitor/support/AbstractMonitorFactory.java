@@ -62,10 +62,14 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
 
     @Override
     public Monitor getMonitor(URL url) {
+        // 设置path com.alibaba.dubbo.monitor.MonitorService  interface =com.alibaba.dubbo.monitor.MonitorService
         url = url.setPath(MonitorService.class.getName()).addParameter(Constants.INTERFACE_KEY, MonitorService.class.getName());
+        // 生成一个key
         String key = url.toServiceStringWithoutResolving();
+        // 获取monitor
         Monitor monitor = MONITORS.get(key);
         Future<Monitor> future = FUTURES.get(key);
+        // 如果缓存了具体的monitor就返回
         if (monitor != null || future != null) {
             return monitor;
         }
@@ -79,8 +83,11 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
             }
 
             final URL monitorUrl = url;
+            // 异步创建
             final ListenableFutureTask<Monitor> listenableFutureTask = ListenableFutureTask.create(new MonitorCreator(monitorUrl));
+            // 注册一个listener，这个listener会在future执行完后将数monitor从future中取出来，放在MONITORS中
             listenableFutureTask.addListener(new MonitorListener(key));
+            // 使用线程池执行创建逻辑，并且把这个任务放到futures中，以便后期能取出来
             executor.execute(listenableFutureTask);
             FUTURES.put(key, listenableFutureTask);
 
@@ -108,6 +115,9 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
         }
     }
 
+    /**
+     * 这个MonitorListener会在Future执行完run方法的时候调用执行，也就是创建完成Monitor对象后执行。
+     */
     class MonitorListener implements Runnable {
 
         private String key;
@@ -119,8 +129,11 @@ public abstract class AbstractMonitorFactory implements MonitorFactory {
         @Override
         public void run() {
             try {
+                // 1、根据key从缓存中获取listenableFuture任务
                 ListenableFuture<Monitor> listenableFuture = AbstractMonitorFactory.FUTURES.get(key);
+                // 2、从ListenableFuture获取创建的那个Monitor对象，然后放到Monitor缓存中
                 AbstractMonitorFactory.MONITORS.put(key, listenableFuture.get());
+                ///3、从任务缓存中移除这个任务
                 AbstractMonitorFactory.FUTURES.remove(key);
             } catch (InterruptedException e) {
                 logger.warn("Thread was interrupted unexpectedly, monitor will never be got.");

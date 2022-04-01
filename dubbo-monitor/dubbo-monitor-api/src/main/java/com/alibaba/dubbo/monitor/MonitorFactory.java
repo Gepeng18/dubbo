@@ -28,6 +28,8 @@ public interface MonitorFactory {
 
     /**
      * Create monitor.
+     * 获取monitor对象
+     * getMonitor方法能够根据url的protocol自适应选择对应的实现类
      *
      * @param url
      * @return monitor

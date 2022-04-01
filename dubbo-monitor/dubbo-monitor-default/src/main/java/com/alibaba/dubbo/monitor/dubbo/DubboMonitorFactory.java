@@ -44,7 +44,9 @@ public class DubboMonitorFactory extends AbstractMonitorFactory {
 
     @Override
     protected Monitor createMonitor(URL url) {
+        // 设置url为protocol是参数protocol的值，缺省是dubbo
         url = url.setProtocol(url.getParameter(Constants.PROTOCOL_KEY, "dubbo"));
+        // 如果path是空的话就设置成MonitorService的全类名，接着就是找filter的配置。
         if (url.getPath() == null || url.getPath().length() == 0) {
             url = url.setPath(MonitorService.class.getName());
         }
@@ -57,7 +59,9 @@ public class DubboMonitorFactory extends AbstractMonitorFactory {
         url = url.addParameters(Constants.CLUSTER_KEY, "failsafe", Constants.CHECK_KEY, String.valueOf(false),
                 Constants.REFERENCE_FILTER_KEY, filter + "-monitor");
         Invoker<MonitorService> monitorInvoker = protocol.refer(MonitorService.class, url);
+        // 生成monitorService的代理 (这里并没有经过注册中心，而是直连的，直接连你配置的那个monitor address)
         MonitorService monitorService = proxyFactory.getProxy(monitorInvoker);
+        // 创建DubboMonitor对象 ()
         return new DubboMonitor(monitorInvoker, monitorService);
     }
 
