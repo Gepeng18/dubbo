@@ -35,6 +35,7 @@ public interface Router extends Comparable<Router>{
 
     /**
      * get the router url.
+     * 获得url
      *
      * @return url
      */
@@ -42,6 +43,7 @@ public interface Router extends Comparable<Router>{
 
     /**
      * route.
+     * 根据规则筛选invoker
      *
      * @param invokers
      * @param url        refer url

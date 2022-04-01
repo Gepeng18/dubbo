@@ -67,16 +67,29 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         setRouters(routers);
     }
 
+    /**
+     * 根据invocation信息获取invoker列表
+     * @param invocation  调用信息
+     * @return
+     * @throws RpcException
+     */
     @Override
     public List<Invoker<T>> list(Invocation invocation) throws RpcException {
+        // 判断是否销毁
         if (destroyed) {
             throw new RpcException("Directory already destroyed .url: " + getUrl());
         }
+        // 调用子类实现
         List<Invoker<T>> invokers = doList(invocation);
         List<Router> localRouters = this.routers; // local reference
+        // 根据路由规则筛选 router
         if (localRouters != null && !localRouters.isEmpty()) {
+            // 根据路由将 invoker过滤一遍
             for (Router router : localRouters) {
                 try {
+                    // runtime  这个参数表示是否在运行时进行路由过滤，缺省是false，这玩意是true的话，每次获取服务提供者列表的时候都要
+                    // 过滤，这是很耗费性能的，其实在从注册中心通知过来的服务提供者url，进行转成method与服务提供者列表对应关系的时候
+                    //就已经对服务提供者进行了路由规则的处理。
                     if (router.getUrl() == null || router.getUrl().getParameter(Constants.RUNTIME_KEY, false)) {
                         invokers = router.route(invokers, getConsumerUrl(), invocation);
                     }
@@ -97,16 +110,22 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         return routers;
     }
 
+    /**
+     * 设置路由规则
+     */
     protected void setRouters(List<Router> routers) {
         // copy list
         routers = routers == null ? new ArrayList<Router>() : new ArrayList<Router>(routers);
         // append url router
+        // 获取router参数值
         String routerkey = url.getParameter(Constants.ROUTER_KEY);
         if (routerkey != null && routerkey.length() > 0) {
+            // 如果router参数值不是空的话， 获取对应的工厂
             RouterFactory routerFactory = ExtensionLoader.getExtensionLoader(RouterFactory.class).getExtension(routerkey);
             routers.add(routerFactory.getRouter(url));
         }
         // append mock invoker selector
+        // 添加几个系统自带的路由处理
         routers.add(new MockInvokersSelector());
         routers.add(new TagRouter());
         Collections.sort(routers);

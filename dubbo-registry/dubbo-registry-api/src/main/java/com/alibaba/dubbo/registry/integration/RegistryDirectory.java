@@ -217,7 +217,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             this.configurators = toConfigurators(configuratorUrls);
         }
         // routers
+        // 处理路由规则url集合 (当url 有变化的时候，重新设置router)
         if (routerUrls != null && !routerUrls.isEmpty()) {
+            // 将routerUrl转换成url
             List<Router> routers = toRouters(routerUrls);
             if (routers != null) { // null - do nothing
                 setRouters(routers);
@@ -311,6 +313,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
+     * 将urls 转换成 routers
      * @param urls
      * @return null : no routers ,do nothing
      * else :routers list
@@ -322,16 +325,21 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
         if (urls != null && !urls.isEmpty()) {
             for (URL url : urls) {
+                // 如果protocol是empty 就跳过
                 if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {
                     continue;
                 }
+                // 获取router
                 String routerType = url.getParameter(Constants.ROUTER_KEY);
                 if (routerType != null && routerType.length() > 0) {
+                    // 设置route 协议
                     url = url.setProtocol(routerType);
                 }
                 try {
+                    // 使用dubbo spi  获得Router
                     Router router = routerFactory.getRouter(url);
                     if (!routers.contains(router))
+                        // 如果list没有这个router， 添加
                         routers.add(router);
                 } catch (Throwable t) {
                     logger.error("convert router url to router error, url: " + url, t);
@@ -452,8 +460,15 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         return providerUrl;
     }
 
+    /**
+     * 使用route 过滤 invokers
+     * @param invokers
+     * @param method
+     * @return
+     */
     private List<Invoker<T>> route(List<Invoker<T>> invokers, String method) {
         Invocation invocation = new RpcInvocation(method, new Class<?>[0], new Object[0]);
+        // 获取routers
         List<Router> routers = getRouters();
         if (routers != null) {
             for (Router router : routers) {
@@ -498,14 +513,19 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 invokersList.add(invoker);
             }
         }
+        // 通过router进行路由过滤
         List<Invoker<T>> newInvokersList = route(invokersList, null);
+        // 将*为key，value为路由过滤完的invoker列表，缓存在map中
         newMethodInvokerMap.put(Constants.ANY_VALUE, newInvokersList);
+        // 这个serviceMethods是创建registryDirectory对象的时候构造方法中处理的
         if (serviceMethods != null && serviceMethods.length > 0) {
             for (String method : serviceMethods) {
+                // 根据method获取对应的invoker集合
                 List<Invoker<T>> methodInvokers = newMethodInvokerMap.get(method);
                 if (methodInvokers == null || methodInvokers.isEmpty()) {
                     methodInvokers = newInvokersList;
                 }
+                // 重新设置一下，然后将之前的methodInvokers 这个集合用router过滤了一下
                 newMethodInvokerMap.put(method, route(methodInvokers, method));
             }
         }
