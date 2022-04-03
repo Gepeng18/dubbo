@@ -83,6 +83,9 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    /**
+     * 最核心的方法
+     */
     @Override
     public void afterPropertiesSet() throws Exception {
         // 当前ServiceBean： <dubbo:service ref="com.jiangzh.course.dubbo.producer.impl.HelloServiceImpl@31ff6309" id="producerService" />
@@ -93,7 +96,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
             }
         }
         //register service bean and set bootstrap
-        // 创建DubboBootap install
+        // 创建DubboBootstrap，并且初始化一个单例的DubboBootstrap
         DubboBootstrap.getInstance().service(this);
     }
 

@@ -324,6 +324,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
         serviceMetadata.getAttachments().putAll(map);
 
+        // 创建ref的代理对象，map中存着和reference相关的配置
         ref = createProxy(map);
 
         serviceMetadata.setTarget(ref);
@@ -388,6 +389,10 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             }
 
             if (urls.size() == 1) {
+                /**
+                 * 创建代理对象 interface是接口全类名
+                 * 调用{@link org.apache.dubbo.registry.integration.RegistryProtocol#refer(Class, URL)}
+                 */
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();

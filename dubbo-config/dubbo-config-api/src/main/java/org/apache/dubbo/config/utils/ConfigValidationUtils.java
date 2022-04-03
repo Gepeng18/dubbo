@@ -220,6 +220,7 @@ public class ConfigValidationUtils {
                 }
             }
         }
+        // service-discovery
         return genCompatibleRegistries(registryList, provider);
     }
 
@@ -244,12 +245,14 @@ public class ConfigValidationUtils {
                         result.add(interfaceCompatibleRegistryURL);
                     }
                 } else {
+                    // instance interface all 模式
                     registerMode = registryURL.getParameter(REGISTER_MODE_KEY, ConfigurationUtils.getCachedDynamicProperty(DUBBO_REGISTER_MODE_DEFAULT_KEY, DEFAULT_REGISTER_MODE_ALL));
                     if (!isValidRegisterMode(registerMode)) {
                         registerMode = DEFAULT_REGISTER_MODE_INTERFACE;
                     }
                     if ((DEFAULT_REGISTER_MODE_INSTANCE.equalsIgnoreCase(registerMode) || DEFAULT_REGISTER_MODE_ALL.equalsIgnoreCase(registerMode))
                         && registryNotExists(registryURL, registryList, SERVICE_REGISTRY_PROTOCOL)) {
+                        // 构建service-discovery-registry://xxxx
                         URL serviceDiscoveryRegistryURL = URLBuilder.from(registryURL)
                             .setProtocol(SERVICE_REGISTRY_PROTOCOL)
                             .removeParameter(REGISTRY_TYPE_KEY)
@@ -257,6 +260,7 @@ public class ConfigValidationUtils {
                         result.add(serviceDiscoveryRegistryURL);
                     }
 
+                    // 是否返回外面传进来的那个registryURL
                     if (DEFAULT_REGISTER_MODE_INTERFACE.equalsIgnoreCase(registerMode) || DEFAULT_REGISTER_MODE_ALL.equalsIgnoreCase(registerMode)) {
                         result.add(registryURL);
                     }

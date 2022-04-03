@@ -197,6 +197,7 @@ public class RegistryProtocol implements Protocol {
      */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        // 这里会注册两次
         // service-discovery-registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=hello-world-producer&client=curator&dubbo=2.0.2&pid=13796&registry=zookeeper&release=3.0.1&timestamp=1627915332986
         // zookeeper://localhost:2181/org.apache.dubbo.registry.RegistryService?application=hello-world-producer&client=curator&dubbo=2.0.2&pid=13796&registry=zookeeper&release=3.0.1&timestamp=1627915332986
         URL registryUrl = getRegistryUrl(originInvoker);
@@ -216,9 +217,11 @@ public class RegistryProtocol implements Protocol {
         // dubbo://192.168.0.116:20880/com.jiangzh.course.dubbo.service.HelloServiceAPI?anyhost=true&application=hello-world-producer&bind.ip=192.168.0.116&bind.port=20880&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&interface=com.jiangzh.course.dubbo.service.HelloServiceAPI&metadata-type=remote&methods=sayHello&pid=13796&release=3.0.1&side=provider&timestamp=1627915333027
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         //export invoker
+        // 启动一个本地服务
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
+        // 获取一个registry客户端
         final Registry registry = getRegistry(registryUrl);
         /*
             service-discovery-registry - ZookeeperServiceDiscovery
@@ -531,6 +534,7 @@ public class RegistryProtocol implements Protocol {
             registry.register(directory.getRegisteredConsumerUrl());
         }
         directory.buildRouterChain(urlToRegistry);
+        // 真正进入订阅流程 RegistryDirectory
         directory.subscribe(toSubscribeUrl(urlToRegistry));
 
         return (ClusterInvoker<T>) cluster.join(directory);

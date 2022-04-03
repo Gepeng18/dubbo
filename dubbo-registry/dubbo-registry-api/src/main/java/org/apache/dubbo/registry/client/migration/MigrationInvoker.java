@@ -236,7 +236,9 @@ public class MigrationInvoker<T> implements MigrationClusterInvoker<T> {
     @Override
     public void migrateToApplicationFirstInvoker(MigrationRule newRule) {
         CountDownLatch latch = new CountDownLatch(0);
+        // 接口级发现(zk中是接口)
         refreshInterfaceInvoker(latch);
+        // 应用级发现(zk中是应用)
         refreshServiceDiscoveryInvoker(latch);
 
         // directly calculate preferred invoker, will not wait until address notify
@@ -436,6 +438,7 @@ public class MigrationInvoker<T> implements MigrationClusterInvoker<T> {
     }
 
     protected void refreshInterfaceInvoker(CountDownLatch latch) {
+        // 1、先把zk的listener清除
         clearListener(invoker);
         if (needRefresh(invoker)) {
             if (logger.isDebugEnabled()) {

@@ -162,6 +162,9 @@ public abstract class AbstractRegistry implements Registry {
         return lastCacheChanged;
     }
 
+    /**
+     * 将provider信息持久化到文件中
+     */
     public void doSaveProperties(long version) {
         if (version < lastCacheChanged.get()) {
             return;
@@ -434,6 +437,7 @@ public abstract class AbstractRegistry implements Registry {
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
             if (localCacheEnabled) {
+                // 重要调用
                 saveProperties(url);
             }
         }

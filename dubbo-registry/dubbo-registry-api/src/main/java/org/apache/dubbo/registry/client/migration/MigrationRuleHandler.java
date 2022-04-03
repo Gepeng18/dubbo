@@ -37,6 +37,9 @@ public class MigrationRuleHandler<T> {
         this.consumerURL = url;
     }
 
+    /**
+     * 三种订阅模式的核心方法
+     */
     public synchronized void doMigrate(MigrationRule rule) {
         if (migrationInvoker instanceof ServiceDiscoveryMigrationInvoker) {
             refreshInvoker(MigrationStep.FORCE_APPLICATION, 1.0f, rule);
@@ -44,6 +47,7 @@ public class MigrationRuleHandler<T> {
         }
 
         // initial step : APPLICATION_FIRST
+        // 默认情况下就是APPLICATION_FIRST，智能匹配，应用/接口级订阅
         MigrationStep step = MigrationStep.APPLICATION_FIRST;
         float threshold = -1f;
 
@@ -68,8 +72,13 @@ public class MigrationRuleHandler<T> {
 
         if ((currentStep == null || currentStep != step) || !currentThreshold.equals(threshold)) {
             boolean success = true;
+            // 三种订阅模式的核心处理
             switch (step) {
                 case APPLICATION_FIRST:
+                    /**
+                     * 默认走这里，智能分析(两种都包含)
+                     * 并且走{@link MigrationInvoker#migrateToApplicationFirstInvoker}
+                     */
                     migrationInvoker.migrateToApplicationFirstInvoker(newRule);
                     break;
                 case FORCE_APPLICATION:

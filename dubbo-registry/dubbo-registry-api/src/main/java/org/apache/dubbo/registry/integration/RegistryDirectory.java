@@ -104,6 +104,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         setSubscribeUrl(url);
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
         referenceConfigurationListener = new ReferenceConfigurationListener(this, url);
+        // 调用 org.apache.dubbo.registry.support.FailbackRegistry.subscribe
         registry.subscribe(url, this);
     }
 

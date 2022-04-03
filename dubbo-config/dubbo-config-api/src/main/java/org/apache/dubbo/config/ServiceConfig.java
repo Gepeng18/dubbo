@@ -354,6 +354,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 serviceMetadata
         );
 
+        // 返回值为以下两个
+        // service-discovery-registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=hello-world-producer&client=curator&dubbo=2.0.2&pid=13796&registry=zookeeper&release=3.0.1&timestamp=1627915332986
+        // zookeeper://localhost:2181/org.apache.dubbo.registry.RegistryService?application=hello-world-producer&client=curator&dubbo=2.0.2&pid=13796&registry=zookeeper&release=3.0.1&timestamp=1627915332986
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         for (ProtocolConfig protocolConfig : protocols) {

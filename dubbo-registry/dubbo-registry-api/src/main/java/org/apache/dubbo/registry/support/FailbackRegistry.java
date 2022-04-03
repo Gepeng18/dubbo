@@ -292,9 +292,11 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     @Override
     public void subscribe(URL url, NotifyListener listener) {
         super.subscribe(url, listener);
+        // 确保重试队列中没数据，这样后面的addFailedSubscribed才有意义
         removeFailedSubscribed(url, listener);
         try {
             // Sending a subscription request to the server side
+            // 调用真正的注册中心进行注册
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;

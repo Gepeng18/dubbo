@@ -136,11 +136,20 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
         }
     }
 
+    /**
+     * 干了两件事
+     * 1、向zk注册watcher
+     * 2、缓存provider数据并写入文件
+     * @param listener
+     */
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            // 订阅根节点
             if (ANY_VALUE.equals(url.getServiceInterface())) {
+                // 订阅/dubbo
                 String root = toRootPath();
+                // <当前节点，当前节点的子节点>
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.computeIfAbsent(url, k -> new ConcurrentHashMap<>());
                 ChildListener zkListener = listeners.computeIfAbsent(listener, k -> (parentPath, currentChilds) -> {
                     for (String child : currentChilds) {
@@ -152,6 +161,7 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
                         }
                     }
                 });
+                // 确保根节点存在
                 zkClient.create(root, false);
                 List<String> services = zkClient.addChildListener(root, zkListener);
                 if (CollectionUtils.isNotEmpty(services)) {
@@ -163,8 +173,11 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
                     }
                 }
             } else {
+                // zk节点为 /dubbo/com.jangzh.course.xxxAPI
                 CountDownLatch latch = new CountDownLatch(1);
                 List<URL> urls = new ArrayList<>();
+                // url->单个服务接口 /com.jiangzh.course.xxxAPI
+                // categories : providers consumers configurations ...
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.computeIfAbsent(url, k -> new ConcurrentHashMap<>());
                     ChildListener zkListener = listeners.computeIfAbsent(listener, k -> new RegistryChildListenerImpl(url, path, k, latch));

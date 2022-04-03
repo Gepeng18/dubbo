@@ -294,7 +294,7 @@ public class ServiceDiscoveryRegistry implements Registry {
 
     protected void subscribeURLs(URL url, NotifyListener listener, Set<String> serviceNames) {
         serviceNames = new TreeSet<>(serviceNames);
-        // [hello-world-producer]
+        // 应用名 [hello-world-producer]
         String serviceNamesKey = toStringKeys(serviceNames);
         // com.jiangzh.course.dubbo.service.HelloServiceAPI:dubbo
         String protocolServiceKey = url.getServiceKey() + GROUP_CHAR_SEPARATOR + url.getParameter(PROTOCOL_KEY, DUBBO);

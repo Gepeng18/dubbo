@@ -79,6 +79,7 @@ public class DubboBootstrapApplicationListener implements ApplicationListener, A
                 // All infrastructure config beans are loaded, initialize dubbo here
                 DubboBootstrap.getInstance().initialize();
             } else if (event instanceof ApplicationContextEvent) {
+                // 非注解，走这里
                 this.onApplicationContextEvent((ApplicationContextEvent) event);
             }
         }

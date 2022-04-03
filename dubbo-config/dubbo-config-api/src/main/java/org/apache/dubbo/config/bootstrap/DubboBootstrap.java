@@ -1097,6 +1097,7 @@ public class DubboBootstrap {
                 logger.info(NAME + " is starting...");
             }
             // 1. export Dubbo Services
+            // provider注册
             exportServices();
 
             // If register consumer instance or has exported services
@@ -1107,6 +1108,7 @@ public class DubboBootstrap {
                 registerServiceInstance();
             }
 
+            // 对应consumer的订阅流程
             referServices();
 
             // wait async export / refer finish if needed
@@ -1406,6 +1408,7 @@ public class DubboBootstrap {
             cache = ReferenceConfigCache.getCache();
         }
 
+        // <dubbo:reference interface="">
         configManager.getReferences().forEach(rc -> {
             // TODO, compatible with  ReferenceConfig.refer()
             ReferenceConfig<?> referenceConfig = (ReferenceConfig<?>) rc;
