@@ -63,13 +63,13 @@ public class AccessLogFilterTest {
         Invoker<AccessLogFilterTest> invoker = new MyInvoker<AccessLogFilterTest>(url);
         Invocation invocation = new MockInvocation();
 
-        Field field = AccessLogFilter.class.getDeclaredField("logEntries");
+        Field field = AccessLogFilter.class.getDeclaredField("LOG_ENTRIES");
         field.setAccessible(true);
-        assertTrue(((Map) field.get(accessLogFilter)).isEmpty());
+        assertTrue(((Map) field.get(AccessLogFilter.class)).isEmpty());
 
         accessLogFilter.invoke(invoker, invocation);
 
-        Map<String, Set<AccessLogData>> logs = (Map<String, Set<AccessLogData>>) field.get(accessLogFilter);
+        Map<String, Set<AccessLogData>> logs = (Map<String, Set<AccessLogData>>) field.get(AccessLogFilter.class);
         assertFalse(logs.isEmpty());
         assertFalse(logs.get("true").isEmpty());
         AccessLogData log = logs.get("true").iterator().next();

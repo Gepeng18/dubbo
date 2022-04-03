@@ -16,12 +16,11 @@
  */
 package org.apache.dubbo.rpc.protocol.grpc.interceptors;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 /**
  * Adapt to the standard Dubbo SPI, so that we can leverage the advantages of Dubbo ExtensionLoader.
  */
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 public interface ServerInterceptor extends io.grpc.ServerInterceptor {
 }

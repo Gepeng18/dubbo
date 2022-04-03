@@ -16,12 +16,11 @@
  */
 package org.apache.dubbo.common.url.component.param;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 import java.util.List;
 
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 public interface DynamicParamSource {
 
     void init(List<String> keys, List<ParamValue> values);

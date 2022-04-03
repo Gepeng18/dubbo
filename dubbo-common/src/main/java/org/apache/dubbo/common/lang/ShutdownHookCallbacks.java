@@ -17,7 +17,6 @@
 package org.apache.dubbo.common.lang;
 
 import org.apache.dubbo.common.extension.ExtensionLoader;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -27,18 +26,17 @@ import static java.util.Collections.sort;
 import static org.apache.dubbo.common.function.ThrowableAction.execute;
 
 /**
- * The composed {@link ShutdownHookCallback} class to manipulate one and more {@link ShutdownHookCallback} instances
+ * The compose {@link ShutdownHookCallback} class to manipulate one and more {@link ShutdownHookCallback} instances
  *
  * @since 2.7.5
  */
 public class ShutdownHookCallbacks {
 
+    public static final ShutdownHookCallbacks INSTANCE = new ShutdownHookCallbacks();
+
     private final List<ShutdownHookCallback> callbacks = new LinkedList<>();
 
-    private ApplicationModel applicationModel;
-
-    public ShutdownHookCallbacks(ApplicationModel applicationModel) {
-        this.applicationModel = applicationModel;
+    ShutdownHookCallbacks() {
         loadCallbacks();
     }
 
@@ -64,7 +62,7 @@ public class ShutdownHookCallbacks {
 
     private void loadCallbacks() {
         ExtensionLoader<ShutdownHookCallback> loader =
-                applicationModel.getExtensionLoader(ShutdownHookCallback.class);
+                ExtensionLoader.getExtensionLoader(ShutdownHookCallback.class);
         loader.getSupportedExtensionInstances().forEach(this::addCallback);
     }
 

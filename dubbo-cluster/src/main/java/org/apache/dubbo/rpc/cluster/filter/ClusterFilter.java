@@ -16,10 +16,9 @@
  */
 package org.apache.dubbo.rpc.cluster.filter;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.rpc.BaseFilter;
 
-@SPI(scope = ExtensionScope.MODULE)
+@SPI
 public interface ClusterFilter extends BaseFilter {
 }

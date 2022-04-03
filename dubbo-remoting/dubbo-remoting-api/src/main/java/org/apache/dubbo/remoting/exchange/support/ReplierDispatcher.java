@@ -16,7 +16,6 @@
  */
 package org.apache.dubbo.remoting.exchange.support;
 
-import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.remoting.RemotingException;
 import org.apache.dubbo.remoting.exchange.ExchangeChannel;
 
@@ -42,7 +41,7 @@ public class ReplierDispatcher implements Replier<Object> {
 
     public ReplierDispatcher(Replier<?> defaultReplier, Map<Class<?>, Replier<?>> repliers) {
         this.defaultReplier = defaultReplier;
-        if (CollectionUtils.isNotEmptyMap(repliers)) {
+        if (repliers != null && repliers.size() > 0) {
             this.repliers.putAll(repliers);
         }
     }

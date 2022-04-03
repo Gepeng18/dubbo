@@ -64,13 +64,13 @@ public class ServiceNameMappingTest {
 
         applicationName = getClass().getSimpleName();
 
-        ApplicationModel.defaultModel().getConfigManager().setApplication(new ApplicationConfig(applicationName));
+        ApplicationModel.getConfigManager().setApplication(new ApplicationConfig(applicationName));
 
         configuration = new FileSystemDynamicConfiguration();
 
         FileUtils.deleteQuietly(configuration.getRootDirectory());
 
-        ApplicationModel.defaultModel().getEnvironment().setDynamicConfiguration(configuration);
+        ApplicationModel.getEnvironment().setDynamicConfiguration(configuration);
 
         serviceNameMapping = getDefaultExtension();
     }

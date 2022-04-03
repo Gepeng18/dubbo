@@ -18,16 +18,13 @@ package org.apache.dubbo.rpc.cluster.support;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.Version;
-import org.apache.dubbo.common.config.Configuration;
-import org.apache.dubbo.common.config.ConfigurationUtils;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.profiler.ProfilerSwitch;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.NetUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.Invocation;
-import org.apache.dubbo.rpc.InvocationProfilerUtils;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
@@ -35,20 +32,14 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.ClusterInvoker;
 import org.apache.dubbo.rpc.cluster.Directory;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
-import org.apache.dubbo.rpc.model.ApplicationModel;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
 import org.apache.dubbo.rpc.support.RpcUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_LOADBALANCE;
-import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_RESELECT_COUNT;
-import static org.apache.dubbo.common.constants.CommonConstants.ENABLE_CONNECTIVITY_VALIDATION;
 import static org.apache.dubbo.common.constants.CommonConstants.LOADBALANCE_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.RESELECT_COUNT;
 import static org.apache.dubbo.rpc.cluster.Constants.CLUSTER_AVAILABLE_CHECK_KEY;
 import static org.apache.dubbo.rpc.cluster.Constants.CLUSTER_STICKY_KEY;
 import static org.apache.dubbo.rpc.cluster.Constants.DEFAULT_CLUSTER_AVAILABLE_CHECK;
@@ -63,11 +54,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 
     protected Directory<T> directory;
 
-    protected boolean availableCheck;
-
-    private volatile int reselectCount = DEFAULT_RESELECT_COUNT;
-
-    private volatile boolean enableConnectivityValidation = true;
+    protected boolean availablecheck;
 
     private AtomicBoolean destroyed = new AtomicBoolean(false);
 
@@ -87,10 +74,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 
         this.directory = directory;
         //sticky: invoker.isAvailable() should always be checked before using when availablecheck is true.
-        this.availableCheck = url.getParameter(CLUSTER_AVAILABLE_CHECK_KEY, DEFAULT_CLUSTER_AVAILABLE_CHECK);
-        Configuration configuration = ConfigurationUtils.getGlobalConfiguration(url.getOrDefaultModuleModel());
-        this.reselectCount = configuration.getInt(RESELECT_COUNT, DEFAULT_RESELECT_COUNT);
-        this.enableConnectivityValidation = configuration.getBoolean(ENABLE_CONNECTIVITY_VALIDATION, true);
+        this.availablecheck = url.getParameter(CLUSTER_AVAILABLE_CHECK_KEY, DEFAULT_CLUSTER_AVAILABLE_CHECK);
     }
 
     @Override
@@ -103,7 +87,6 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         return getDirectory().getConsumerUrl();
     }
 
-    @Override
     public URL getRegistryUrl() {
         return getDirectory().getUrl();
     }
@@ -117,7 +100,6 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         return getDirectory().isAvailable();
     }
 
-    @Override
     public Directory<T> getDirectory() {
         return directory;
     }
@@ -159,7 +141,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         String methodName = invocation == null ? StringUtils.EMPTY_STRING : invocation.getMethodName();
 
         boolean sticky = invokers.get(0).getUrl()
-            .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
+                .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
 
         //ignore overloaded method
         if (stickyInvoker != null && !invokers.contains(stickyInvoker)) {
@@ -167,7 +149,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         }
         //ignore concurrency problem
         if (sticky && stickyInvoker != null && (selected == null || !selected.contains(stickyInvoker))) {
-            if (availableCheck && stickyInvoker.isAvailable()) {
+            if (availablecheck && stickyInvoker.isAvailable()) {
                 return stickyInvoker;
             }
         }
@@ -188,22 +170,15 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
             return null;
         }
         if (invokers.size() == 1) {
-            Invoker<T> tInvoker = invokers.get(0);
-            checkShouldInvalidateInvoker(tInvoker);
-            return tInvoker;
+            return invokers.get(0);
         }
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
-        boolean isSelected = selected != null && selected.contains(invoker);
-        boolean isUnavailable = availableCheck && !invoker.isAvailable() && getUrl() != null;
-
-        if (isUnavailable) {
-            invalidateInvoker(invoker);
-        }
-        if (isSelected || isUnavailable) {
+        if ((selected != null && selected.contains(invoker))
+                || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
             try {
-                Invoker<T> rInvoker = reselect(loadbalance, invocation, invokers, selected, availableCheck);
+                Invoker<T> rInvoker = reselect(loadbalance, invocation, invokers, selected, availablecheck);
                 if (rInvoker != null) {
                     invoker = rInvoker;
                 } else {
@@ -232,90 +207,46 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
      * @param invocation     invocation
      * @param invokers       invoker candidates
      * @param selected       exclude selected invokers or not
-     * @param availableCheck check invoker available if true
+     * @param availablecheck check invoker available if true
      * @return the reselect result to do invoke
      * @throws RpcException exception
      */
     private Invoker<T> reselect(LoadBalance loadbalance, Invocation invocation,
-                                List<Invoker<T>> invokers, List<Invoker<T>> selected, boolean availableCheck) throws RpcException {
+                                List<Invoker<T>> invokers, List<Invoker<T>> selected, boolean availablecheck) throws RpcException {
 
-        // Allocating one in advance, this list is certain to be used.
-        List<Invoker<T>> reselectInvokers = new ArrayList<>(Math.min(invokers.size(), reselectCount));
+        //Allocating one in advance, this list is certain to be used.
+        List<Invoker<T>> reselectInvokers = new ArrayList<>(
+                invokers.size() > 1 ? (invokers.size() - 1) : invokers.size());
 
-        // 1. Try picking some invokers not in `selected`.
-        //    1.1. If all selectable invokers' size is smaller than reselectCount, just add all
-        //    1.2. If all selectable invokers' size is greater than reselectCount, randomly select reselectCount.
-        //            The result size of invokers might smaller than reselectCount due to disAvailable or de-duplication (might be zero).
-        //            This means there is probable that reselectInvokers is empty however all invoker list may contain available invokers.
-        //            Use reselectCount can reduce retry times if invokers' size is huge, which may lead to long time hang up.
-        if (reselectCount >= invokers.size()) {
-            for (Invoker<T> invoker : invokers) {
-                // check if available
-                if (availableCheck && !invoker.isAvailable()) {
-                    // add to invalidate invoker
-                    invalidateInvoker(invoker);
-                    continue;
-                }
-
-                if (selected == null || !selected.contains(invoker)) {
-                    reselectInvokers.add(invoker);
-                }
+        // First, try picking a invoker not in `selected`.
+        for (Invoker<T> invoker : invokers) {
+            if (availablecheck && !invoker.isAvailable()) {
+                continue;
             }
-        } else {
-            for (int i = 0; i < reselectCount; i++) {
-                // select one randomly
-                Invoker<T> invoker = invokers.get(ThreadLocalRandom.current().nextInt(invokers.size()));
-                // check if available
-                if (availableCheck && !invoker.isAvailable()) {
-                    // add to invalidate invoker
-                    invalidateInvoker(invoker);
-                    continue;
-                }
-                // de-duplication
-                if (selected == null || !selected.contains(invoker) || !reselectInvokers.contains(invoker)) {
-                    reselectInvokers.add(invoker);
-                }
+
+            if (selected == null || !selected.contains(invoker)) {
+                reselectInvokers.add(invoker);
             }
         }
 
-        // 2. Use loadBalance to select one (all the reselectInvokers are available)
         if (!reselectInvokers.isEmpty()) {
             return loadbalance.select(reselectInvokers, getUrl(), invocation);
         }
 
-        // 3. reselectInvokers is empty. Unable to find at least one available invoker.
-        //    Re-check all the selected invokers. If some in the selected list are available, add to reselectInvokers.
+        // Just pick an available invoker using loadbalance policy
         if (selected != null) {
             for (Invoker<T> invoker : selected) {
                 if ((invoker.isAvailable()) // available first
-                    && !reselectInvokers.contains(invoker)) {
+                        && !reselectInvokers.contains(invoker)) {
                     reselectInvokers.add(invoker);
                 }
             }
         }
-
-        // 4. If reselectInvokers is not empty after re-check.
-        //    Pick an available invoker using loadBalance policy
         if (!reselectInvokers.isEmpty()) {
             return loadbalance.select(reselectInvokers, getUrl(), invocation);
         }
 
-        // 5. No invoker match, return null.
         return null;
-    }
-
-    private void checkShouldInvalidateInvoker(Invoker<T> invoker) {
-        if (availableCheck && !invoker.isAvailable()) {
-            invalidateInvoker(invoker);
-        }
-    }
-
-    private void invalidateInvoker(Invoker<T> invoker) {
-        if (enableConnectivityValidation) {
-            if (getDirectory() != null) {
-                getDirectory().addInvalidateInvoker(invoker);
-            }
-        }
     }
 
     @Override
@@ -328,26 +259,17 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 //            ((RpcInvocation) invocation).addObjectAttachmentsIfAbsent(contextAttachments);
 //        }
 
-        InvocationProfilerUtils.enterDetailProfiler(invocation, () -> "Router route.");
         List<Invoker<T>> invokers = list(invocation);
-        InvocationProfilerUtils.releaseDetailProfiler(invocation);
-
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
-
-        InvocationProfilerUtils.enterDetailProfiler(invocation, () -> "Cluster " + this.getClass().getName() + " invoke.");
-        try {
-            return doInvoke(invocation, invokers, loadbalance);
-        } finally {
-            InvocationProfilerUtils.releaseDetailProfiler(invocation);
-        }
+        return doInvoke(invocation, invokers, loadbalance);
     }
 
     protected void checkWhetherDestroyed() {
         if (destroyed.get()) {
             throw new RpcException("Rpc cluster invoker for " + getInterface() + " on consumer " + NetUtils.getLocalHost()
-                + " use dubbo version " + Version.getVersion()
-                + " is now destroyed! Can not invoke any more.");
+                    + " use dubbo version " + Version.getVersion()
+                    + " is now destroyed! Can not invoke any more.");
         }
     }
 
@@ -359,38 +281,17 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
     protected void checkInvokers(List<Invoker<T>> invokers, Invocation invocation) {
         if (CollectionUtils.isEmpty(invokers)) {
             throw new RpcException(RpcException.NO_INVOKER_AVAILABLE_AFTER_FILTER, "Failed to invoke the method "
-                + invocation.getMethodName() + " in the service " + getInterface().getName()
-                + ". No provider available for the service " + getDirectory().getConsumerUrl().getServiceKey()
-                + " from registry " + getDirectory().getUrl().getAddress()
-                + " on the consumer " + NetUtils.getLocalHost()
-                + " using the dubbo version " + Version.getVersion()
-                + ". Please check if the providers have been started and registered.");
+                    + invocation.getMethodName() + " in the service " + getInterface().getName()
+                    + ". No provider available for the service " + getDirectory().getConsumerUrl().getServiceKey()
+                    + " from registry " + getDirectory().getUrl().getAddress()
+                    + " on the consumer " + NetUtils.getLocalHost()
+                    + " using the dubbo version " + Version.getVersion()
+                    + ". Please check if the providers have been started and registered.");
         }
     }
 
     protected Result invokeWithContext(Invoker<T> invoker, Invocation invocation) {
         setContext(invoker);
-        Result result;
-        try {
-            if (ProfilerSwitch.isEnableSimpleProfiler()) {
-                InvocationProfilerUtils.enterProfiler(invocation, "Invoker invoke. Target Address: " + invoker.getUrl().getAddress());
-            }
-            result = invoker.invoke(invocation);
-        } finally {
-            clearContext(invoker);
-            InvocationProfilerUtils.releaseSimpleProfiler(invocation);
-        }
-        return result;
-    }
-
-    /**
-     * When using a thread pool to fork a child thread, ThreadLocal cannot be passed.
-     * In this scenario, please use the invokeWithContextAsync method.
-     *
-     * @return
-     */
-    protected Result invokeWithContextAsync(Invoker<T> invoker, Invocation invocation, URL consumerUrl) {
-        setContext(invoker, consumerUrl);
         Result result;
         try {
             result = invoker.invoke(invocation);
@@ -419,27 +320,23 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
      * @return LoadBalance instance. if not need init, return null.
      */
     protected LoadBalance initLoadBalance(List<Invoker<T>> invokers, Invocation invocation) {
-        ApplicationModel applicationModel = ScopeModelUtil.getApplicationModel(invocation.getModuleModel());
         if (CollectionUtils.isNotEmpty(invokers)) {
-            return applicationModel.getExtensionLoader(LoadBalance.class).getExtension(
-                invokers.get(0).getUrl().getMethodParameter(
-                    RpcUtils.getMethodName(invocation), LOADBALANCE_KEY, DEFAULT_LOADBALANCE
-                )
+            return ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(
+                    invokers.get(0).getUrl().getMethodParameter(
+                            RpcUtils.getMethodName(invocation), LOADBALANCE_KEY, DEFAULT_LOADBALANCE
+                    )
             );
         } else {
-            return applicationModel.getExtensionLoader(LoadBalance.class).getExtension(DEFAULT_LOADBALANCE);
+            return ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(DEFAULT_LOADBALANCE);
         }
     }
 
 
     private void setContext(Invoker<T> invoker) {
-        setContext(invoker, null);
-    }
-
-    private void setContext(Invoker<T> invoker, URL consumerUrl) {
         RpcContext context = RpcContext.getServiceContext();
         context.setInvoker(invoker)
-            .setConsumerUrl(null != consumerUrl ? consumerUrl : RpcContext.getServiceContext().getConsumerUrl());
+                .setRemoteAddress(invoker.getUrl().getHost(), invoker.getUrl().getPort())
+                .setRemoteApplicationName(invoker.getUrl().getRemoteApplication());
     }
 
     private void clearContext(Invoker<T> invoker) {

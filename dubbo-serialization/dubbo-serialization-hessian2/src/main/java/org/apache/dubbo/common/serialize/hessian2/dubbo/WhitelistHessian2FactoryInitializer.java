@@ -16,6 +16,7 @@
  */
 package org.apache.dubbo.common.serialize.hessian2.dubbo;
 
+import org.apache.dubbo.common.config.ConfigurationUtils;
 import org.apache.dubbo.common.serialize.hessian2.Hessian2SerializerFactory;
 import org.apache.dubbo.common.utils.StringUtils;
 
@@ -29,26 +30,20 @@ public class WhitelistHessian2FactoryInitializer extends AbstractHessian2Factory
     @Override
     public SerializerFactory createSerializerFactory() {
         SerializerFactory serializerFactory = new Hessian2SerializerFactory();
-        String whiteList = System.getProperty(WHITELIST);
+        String whiteList = ConfigurationUtils.getProperty(WHITELIST);
         if ("true".equals(whiteList)) {
             serializerFactory.getClassFactory().setWhitelist(true);
-            String allowPattern = System.getProperty(ALLOW);
+            String allowPattern = ConfigurationUtils.getProperty(ALLOW);
             if (StringUtils.isNotEmpty(allowPattern)) {
-                for (String pattern : allowPattern.split(";")) {
-                    serializerFactory.getClassFactory().allow(pattern);
-                }
+                serializerFactory.getClassFactory().allow(allowPattern);
             }
         } else {
             serializerFactory.getClassFactory().setWhitelist(false);
-            String denyPattern = System.getProperty(DENY);
+            String denyPattern = ConfigurationUtils.getProperty(DENY);
             if (StringUtils.isNotEmpty(denyPattern)) {
-                for (String pattern : denyPattern.split(";")) {
-                    serializerFactory.getClassFactory().deny(pattern);
-                }
+                serializerFactory.getClassFactory().deny(denyPattern);
             }
         }
-        serializerFactory.setAllowNonSerializable(Boolean.parseBoolean(System.getProperty("dubbo.hessian.allowNonSerializable", "false")));
-        serializerFactory.getClassFactory().allow("org.apache.dubbo.*");
         return serializerFactory;
     }
 

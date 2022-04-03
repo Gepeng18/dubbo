@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * InjvmExporter
  */
-public class InjvmExporter<T> extends AbstractExporter<T> {
+class InjvmExporter<T> extends AbstractExporter<T> {
 
     private final String key;
 

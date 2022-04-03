@@ -22,9 +22,9 @@ import org.apache.dubbo.common.config.ConfigurationUtils;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.serialize.support.SerializableClassRegistry;
 import org.apache.dubbo.common.serialize.support.SerializationOptimizer;
-import org.apache.dubbo.common.url.component.ServiceConfigURL;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.ConcurrentHashSet;
+import org.apache.dubbo.common.utils.ConfigUtils;
 import org.apache.dubbo.common.utils.NetUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.remoting.Channel;
@@ -46,7 +46,6 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcInvocation;
-import org.apache.dubbo.rpc.model.ScopeModel;
 import org.apache.dubbo.rpc.protocol.AbstractProtocol;
 
 import java.net.InetSocketAddress;
@@ -58,7 +57,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static org.apache.dubbo.common.constants.CommonConstants.GROUP_KEY;
@@ -97,6 +95,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     public static final int DEFAULT_PORT = 20880;
     private static final String IS_CALLBACK_SERVICE_INVOKE = "_isCallBackServiceInvoke";
+    private static DubboProtocol INSTANCE;
 
     /**
      * <host:port,Exchanger>
@@ -105,8 +104,6 @@ public class DubboProtocol extends AbstractProtocol {
     private final Map<String, Object> referenceClientMap = new ConcurrentHashMap<>();
     private static final Object PENDING_OBJECT = new Object();
     private final Set<String> optimizers = new ConcurrentHashSet<>();
-
-    private AtomicBoolean destroyed = new AtomicBoolean();
 
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
@@ -121,11 +118,6 @@ public class DubboProtocol extends AbstractProtocol {
 
             Invocation inv = (Invocation) message;
             Invoker<?> invoker = getInvoker(channel, inv);
-            inv.setServiceModel(invoker.getUrl().getServiceModel());
-            // switch TCCL
-            if (invoker.getUrl().getServiceModel() != null) {
-                Thread.currentThread().setContextClassLoader(invoker.getUrl().getServiceModel().getClassLoader());
-            }
             // need to consider backward-compatibility if it's a callback
             if (Boolean.TRUE.toString().equals(inv.getObjectAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
@@ -181,27 +173,10 @@ public class DubboProtocol extends AbstractProtocol {
             Invocation invocation = createInvocation(channel, channel.getUrl(), methodKey);
             if (invocation != null) {
                 try {
-                    if (Boolean.TRUE.toString().equals(invocation.getAttachment(STUB_EVENT_KEY))) {
-                        tryToGetStubService(channel, invocation);
-                    }
                     received(channel, invocation);
                 } catch (Throwable t) {
                     logger.warn("Failed to invoke event method " + invocation.getMethodName() + "(), cause: " + t.getMessage(), t);
                 }
-            }
-        }
-
-        private void tryToGetStubService(Channel channel, Invocation invocation) throws RemotingException {
-            try {
-                Invoker<?> invoker = getInvoker(channel, invocation);
-            } catch (RemotingException e) {
-                String serviceKey = serviceKey(
-                    0,
-                    (String) invocation.getObjectAttachments().get(PATH_KEY),
-                    (String) invocation.getObjectAttachments().get(VERSION_KEY),
-                    (String) invocation.getObjectAttachments().get(GROUP_KEY)
-                );
-                throw new RemotingException(channel, "The stub service[" + serviceKey + "] is not found, it may not be exported yet");
             }
         }
 
@@ -220,7 +195,7 @@ public class DubboProtocol extends AbstractProtocol {
                 return null;
             }
 
-            RpcInvocation invocation = new RpcInvocation(url.getServiceModel(), method, url.getParameter(INTERFACE_KEY), "", new Class<?>[0], new Object[0]);
+            RpcInvocation invocation = new RpcInvocation(method, url.getParameter(INTERFACE_KEY), "", new Class<?>[0], new Object[0]);
             invocation.setAttachment(PATH_KEY, url.getPath());
             invocation.setAttachment(GROUP_KEY, url.getGroup());
             invocation.setAttachment(INTERFACE_KEY, url.getParameter(INTERFACE_KEY));
@@ -234,18 +209,16 @@ public class DubboProtocol extends AbstractProtocol {
     };
 
     public DubboProtocol() {
+        INSTANCE = this;
     }
 
-    /**
-     * @deprecated Use {@link DubboProtocol#getDubboProtocol(ScopeModel)} instead
-     */
-    @Deprecated
     public static DubboProtocol getDubboProtocol() {
-        return (DubboProtocol) ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME, false);
-    }
+        if (INSTANCE == null) {
+            // load
+            ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME);
+        }
 
-    public static DubboProtocol getDubboProtocol(ScopeModel scopeModel) {
-        return (DubboProtocol) scopeModel.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME, false);
+        return INSTANCE;
     }
 
     @Override
@@ -262,19 +235,18 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException {
-        boolean isCallBackServiceInvoke;
-        boolean isStubServiceInvoke;
+        boolean isCallBackServiceInvoke = false;
+        boolean isStubServiceInvoke = false;
         int port = channel.getLocalAddress().getPort();
         String path = (String) inv.getObjectAttachments().get(PATH_KEY);
 
-        //if it's stub service on client side(after enable stubevent, usually is set up onconnect or ondisconnect method)
+        // if it's callback service on client side
         isStubServiceInvoke = Boolean.TRUE.toString().equals(inv.getObjectAttachments().get(STUB_EVENT_KEY));
         if (isStubServiceInvoke) {
-            //when a stub service export to local, it usually can't be exposed to port
-            port = 0;
+            port = channel.getRemoteAddress().getPort();
         }
 
-        // if it's callback service on client side
+        //callback
         isCallBackServiceInvoke = isClientSide(channel) && !isStubServiceInvoke;
         if (isCallBackServiceInvoke) {
             path += "." + inv.getObjectAttachments().get(CALLBACK_SERVICE_KEY);
@@ -308,14 +280,14 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
-        checkDestroyed();
         URL url = invoker.getUrl();
 
         // export service.
         String key = serviceKey(url);
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+        exporterMap.put(key, exporter);
 
-        //export a stub service for dispatching event
+        //export an stub service for dispatching event
         Boolean isStubSupportEvent = url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice) {
@@ -336,10 +308,9 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     private void openServer(URL url) {
-        checkDestroyed();
         // find server.
         String key = url.getAddress();
-        // client can export a service which only for server to invoke
+        //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
         if (isServer) {
             ProtocolServer server = serverMap.get(key);
@@ -348,20 +319,12 @@ public class DubboProtocol extends AbstractProtocol {
                     server = serverMap.get(key);
                     if (server == null) {
                         serverMap.put(key, createServer(url));
-                    }else {
-                        server.reset(url);
                     }
                 }
             } else {
                 // server supports reset, use together with override
                 server.reset(url);
             }
-        }
-    }
-
-    private void checkDestroyed() {
-        if (destroyed.get()) {
-            throw new IllegalStateException(getClass().getSimpleName() + " is destroyed");
         }
     }
 
@@ -375,7 +338,7 @@ public class DubboProtocol extends AbstractProtocol {
                 .build();
         String str = url.getParameter(SERVER_KEY, DEFAULT_REMOTING_SERVER);
 
-        if (StringUtils.isNotEmpty(str) && !url.getOrDefaultFrameworkModel().getExtensionLoader(Transporter.class).hasExtension(str)) {
+        if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
         }
 
@@ -387,16 +350,14 @@ public class DubboProtocol extends AbstractProtocol {
         }
 
         str = url.getParameter(CLIENT_KEY);
-        if (StringUtils.isNotEmpty(str)) {
-            Set<String> supportedTypes = url.getOrDefaultFrameworkModel().getExtensionLoader(Transporter.class).getSupportedExtensions();
+        if (str != null && str.length() > 0) {
+            Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();
             if (!supportedTypes.contains(str)) {
                 throw new RpcException("Unsupported client type: " + str);
             }
         }
 
-        DubboProtocolServer protocolServer = new DubboProtocolServer(server);
-        loadServerProperties(protocolServer);
-        return protocolServer;
+        return new DubboProtocolServer(server);
     }
 
     private void optimizeSerialization(URL url) throws RpcException {
@@ -436,13 +397,11 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-        checkDestroyed();
         return protocolBindingRefer(type, url);
     }
 
     @Override
     public <T> Invoker<T> protocolBindingRefer(Class<T> serviceType, URL url) throws RpcException {
-        checkDestroyed();
         optimizeSerialization(url);
 
         // create rpc invoker.
@@ -467,7 +426,7 @@ public class DubboProtocol extends AbstractProtocol {
              * The xml configuration should have a higher priority than properties.
              */
             String shareConnectionsStr = url.getParameter(SHARE_CONNECTIONS_KEY, (String) null);
-            connections = Integer.parseInt(StringUtils.isBlank(shareConnectionsStr) ? ConfigurationUtils.getProperty(url.getOrDefaultApplicationModel(), SHARE_CONNECTIONS_KEY,
+            connections = Integer.parseInt(StringUtils.isBlank(shareConnectionsStr) ? ConfigUtils.getProperty(SHARE_CONNECTIONS_KEY,
                     DEFAULT_SHARE_CONNECTIONS) : shareConnectionsStr);
             shareClients = getSharedClient(url, connections);
         }
@@ -626,11 +585,8 @@ public class DubboProtocol extends AbstractProtocol {
      */
     private ReferenceCountExchangeClient buildReferenceCountExchangeClient(URL url) {
         ExchangeClient exchangeClient = initClient(url);
-        ReferenceCountExchangeClient client = new ReferenceCountExchangeClient(exchangeClient, DubboCodec.NAME);
-        // read configs
-        int shutdownTimeout = ConfigurationUtils.getServerShutdownTimeout(url.getScopeModel());
-        client.setShutdownWaitTime(shutdownTimeout);
-        return client;
+
+        return new ReferenceCountExchangeClient(exchangeClient);
     }
 
     /**
@@ -640,29 +596,25 @@ public class DubboProtocol extends AbstractProtocol {
      */
     private ExchangeClient initClient(URL url) {
 
-        /**
-         * Instance of url is InstanceAddressURL, so addParameter actually adds parameters into ServiceInstance,
-         * which means params are shared among different services. Since client is shared among services this is currently not a problem.
-         */
+        // client type setting.
         String str = url.getParameter(CLIENT_KEY, url.getParameter(SERVER_KEY, DEFAULT_REMOTING_CLIENT));
 
+        url = url.addParameter(CODEC_KEY, DubboCodec.NAME);
+        // enable heartbeat by default
+        url = url.addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT));
+
         // BIO is not allowed since it has severe performance issue.
-        if (StringUtils.isNotEmpty(str) && !url.getOrDefaultFrameworkModel().getExtensionLoader(Transporter.class).hasExtension(str)) {
+        if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported client type: " + str + "," +
-                    " supported client type is " + StringUtils.join(url.getOrDefaultFrameworkModel().getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
+                    " supported client type is " + StringUtils.join(ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
         }
 
         ExchangeClient client;
         try {
-            // Replace InstanceAddressURL with ServiceConfigURL.
-            url = new ServiceConfigURL(DubboCodec.NAME, url.getUsername(), url.getPassword(), url.getHost(), url.getPort(), url.getPath(),  url.getAllParameters());
-            url = url.addParameter(CODEC_KEY, DubboCodec.NAME);
-            // enable heartbeat by default
-            url = url.addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT));
-
             // connection should be lazy
             if (url.getParameter(LAZY_CONNECT_KEY, false)) {
                 client = new LazyConnectExchangeClient(url, requestHandler);
+
             } else {
                 client = Exchangers.connect(url, requestHandler);
             }
@@ -677,12 +629,6 @@ public class DubboProtocol extends AbstractProtocol {
     @Override
     @SuppressWarnings("unchecked")
     public void destroy() {
-        if (!destroyed.compareAndSet(false, true)) {
-            return;
-        }
-        if (logger.isInfoEnabled()) {
-            logger.info("Destroying protocol [" + this.getClass().getSimpleName() + "] ...");
-        }
         for (String key : new ArrayList<>(serverMap.keySet())) {
             ProtocolServer protocolServer = serverMap.remove(key);
 
@@ -694,16 +640,15 @@ public class DubboProtocol extends AbstractProtocol {
 
             try {
                 if (logger.isInfoEnabled()) {
-                    logger.info("Closing dubbo server: " + server.getLocalAddress());
+                    logger.info("Close dubbo server: " + server.getLocalAddress());
                 }
 
-                server.close(getServerShutdownTimeout(protocolServer));
+                server.close(ConfigurationUtils.getServerShutdownTimeout());
 
             } catch (Throwable t) {
-                logger.warn("Close dubbo server [" + server.getLocalAddress()+ "] failed: " + t.getMessage(), t);
+                logger.warn(t.getMessage(), t);
             }
         }
-        serverMap.clear();
 
         for (String key : new ArrayList<>(referenceClientMap.keySet())) {
             Object clients = referenceClientMap.remove(key);
@@ -719,7 +664,6 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
         }
-        referenceClientMap.clear();
 
         super.destroy();
     }
@@ -739,7 +683,7 @@ public class DubboProtocol extends AbstractProtocol {
                 logger.info("Close dubbo connect: " + client.getLocalAddress() + "-->" + client.getRemoteAddress());
             }
 
-            client.close(client.getShutdownWaitTime());
+            client.close(ConfigurationUtils.getServerShutdownTimeout());
 
             // TODO
             /*

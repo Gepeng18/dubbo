@@ -16,8 +16,9 @@
  */
 package org.apache.dubbo.remoting.api;
 
-import org.apache.dubbo.common.resource.GlobalResourceInitializer;
+import org.apache.dubbo.common.config.Configuration;
 import org.apache.dubbo.remoting.Constants;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
@@ -33,18 +34,11 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
 
-import static org.apache.dubbo.common.constants.CommonConstants.OS_LINUX_PREFIX;
-import static org.apache.dubbo.common.constants.CommonConstants.OS_NAME_KEY;
-import static org.apache.dubbo.remoting.Constants.NETTY_EPOLL_ENABLE_KEY;
-
 public class NettyEventLoopFactory {
     /**
      * netty client bootstrap
      */
-    public static final GlobalResourceInitializer<EventLoopGroup> NIO_EVENT_LOOP_GROUP = new GlobalResourceInitializer<>(() ->
-        eventLoopGroup(Constants.DEFAULT_IO_THREADS, "NettyClientWorker"),
-        eventLoopGroup -> eventLoopGroup.shutdownGracefully()
-    );
+    public static final EventLoopGroup NIO_EVENT_LOOP_GROUP = eventLoopGroup(Constants.DEFAULT_IO_THREADS, "NettyClientWorker");
 
     public static EventLoopGroup eventLoopGroup(int threads, String threadFactoryName) {
         ThreadFactory threadFactory = new DefaultThreadFactory(threadFactoryName, true);
@@ -61,9 +55,10 @@ public class NettyEventLoopFactory {
     }
 
     private static boolean shouldEpoll() {
-        if (Boolean.parseBoolean(System.getProperty(NETTY_EPOLL_ENABLE_KEY, "false"))) {
-            String osName = System.getProperty(OS_NAME_KEY);
-            return osName.toLowerCase().contains(OS_LINUX_PREFIX) && Epoll.isAvailable();
+        Configuration configuration = ApplicationModel.getEnvironment().getConfiguration();
+        if (configuration.getBoolean("netty.epoll.enable", false)) {
+            String osName = configuration.getString("os.name");
+            return osName.toLowerCase().contains("linux") && Epoll.isAvailable();
         }
 
         return false;

@@ -17,8 +17,7 @@
 package org.apache.dubbo.config.spring.beans.factory.config;
 
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
-import org.apache.dubbo.config.spring.ServiceBean;
-
+import org.apache.dubbo.config.spring.ReferenceBean;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,10 +49,12 @@ public class MultipleServicesWithMethodConfigsTest {
 
     @Test
     public void test() {
+//        Map<String, MethodConfig> methodConfigs = applicationContext.getBeansOfType(MethodConfig.class);
+//        assertEquals(2, methodConfigs.size());
 
-        Map<String, ServiceBean> serviceBeanMap = applicationContext.getBeansOfType(ServiceBean.class);
-        for (ServiceBean serviceBean : serviceBeanMap.values()) {
-            Assertions.assertEquals(1, serviceBean.getMethods().size());
+        Map<String, ReferenceBean> referenceBeanMap = applicationContext.getBeansOfType(ReferenceBean.class);
+        for (ReferenceBean referenceBean : referenceBeanMap.values()) {
+            Assertions.assertEquals(1, referenceBean.getReferenceConfig().getMethods().size());
         }
     }
 }

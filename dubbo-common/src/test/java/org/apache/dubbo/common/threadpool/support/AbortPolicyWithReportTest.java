@@ -27,8 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.apache.dubbo.common.constants.CommonConstants.OS_NAME_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.OS_WIN_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AbortPolicyWithReportTest {
@@ -71,8 +69,8 @@ public class AbortPolicyWithReportTest {
     }
 
     private String dumpDirectoryCannotBeCreated() {
-        final String os = System.getProperty(OS_NAME_KEY).toLowerCase();
-        if (os.contains(OS_WIN_PREFIX)) {
+        final String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
             // "con" is one of Windows reserved names, https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
             return "con";
         } else {

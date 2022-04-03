@@ -34,7 +34,6 @@ public class MyInvoker<T> implements Invoker<T> {
     URL url;
     Class<T> type;
     boolean hasException = false;
-    boolean destroyed = false;
 
     public MyInvoker(URL url) {
         this.url = url;
@@ -75,11 +74,6 @@ public class MyInvoker<T> implements Invoker<T> {
 
     @Override
     public void destroy() {
-        destroyed = true;
-    }
-
-    public boolean isDestroyed() {
-        return destroyed;
     }
 
     @Override

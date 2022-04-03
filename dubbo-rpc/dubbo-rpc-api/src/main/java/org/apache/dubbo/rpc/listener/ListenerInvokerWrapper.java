@@ -102,11 +102,4 @@ public class ListenerInvokerWrapper<T> implements Invoker<T> {
         }
     }
 
-    public Invoker<T> getInvoker() {
-        return invoker;
-    }
-
-    public List<InvokerListener> getListeners() {
-        return listeners;
-    }
 }

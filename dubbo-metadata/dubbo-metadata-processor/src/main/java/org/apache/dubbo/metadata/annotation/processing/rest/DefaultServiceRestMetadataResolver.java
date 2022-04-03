@@ -17,10 +17,8 @@
 package org.apache.dubbo.metadata.annotation.processing.rest;
 
 import org.apache.dubbo.common.convert.Converter;
-import org.apache.dubbo.common.convert.ConverterUtil;
 import org.apache.dubbo.metadata.annotation.processing.rest.jaxrs.JAXRSServiceRestMetadataResolver;
 import org.apache.dubbo.metadata.annotation.processing.rest.springmvc.SpringMvcServiceRestMetadataResolver;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -28,12 +26,13 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static org.apache.dubbo.common.convert.Converter.getConverter;
 import static org.apache.dubbo.common.utils.ClassUtils.forName;
 import static org.apache.dubbo.common.utils.StringUtils.SLASH_CHAR;
 import static org.apache.dubbo.metadata.annotation.processing.util.LoggerUtils.warn;
@@ -62,7 +61,7 @@ public class DefaultServiceRestMetadataResolver extends AbstractServiceRestMetad
             "application/*+xml;charset=UTF-8"
     );
 
-    private final Set<ExecutableElement> hasComplexParameterTypeMethods = new HashSet<>();
+    private final Set<ExecutableElement> hasComplexParameterTypeMethods = new LinkedHashSet<>();
 
     @Override
     public boolean supports(ProcessingEnvironment processingEnvironment, TypeElement serviceType) {
@@ -147,7 +146,7 @@ public class DefaultServiceRestMetadataResolver extends AbstractServiceRestMetad
         boolean supported;
         try {
             Class<?> targetType = forName(className, classLoader);
-            supported = FrameworkModel.defaultModel().getBeanFactory().getBean(ConverterUtil.class).getConverter(String.class, targetType) != null;
+            supported = getConverter(String.class, targetType) != null;
         } catch (ClassNotFoundException e) {
             supported = false;
         }

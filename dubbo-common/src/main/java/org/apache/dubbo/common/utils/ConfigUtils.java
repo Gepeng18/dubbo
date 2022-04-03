@@ -19,7 +19,7 @@ package org.apache.dubbo.common.utils;
 import org.apache.dubbo.common.config.Configuration;
 import org.apache.dubbo.common.config.InmemoryConfiguration;
 import org.apache.dubbo.common.constants.CommonConstants;
-import org.apache.dubbo.common.extension.ExtensionDirector;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 
@@ -31,15 +31,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,7 +48,8 @@ public class ConfigUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigUtils.class);
     private static Pattern VARIABLE_PATTERN = Pattern.compile(
-        "\\$\\s*\\{?\\s*([\\._0-9a-zA-Z]+)\\s*\\}?");
+            "\\$\\s*\\{?\\s*([\\._0-9a-zA-Z]+)\\s*\\}?");
+    private static volatile Properties PROPERTIES;
     private static int PID = -1;
 
     private ConfigUtils() {
@@ -63,15 +61,15 @@ public class ConfigUtils {
 
     public static boolean isEmpty(String value) {
         return StringUtils.isEmpty(value)
-            || "false".equalsIgnoreCase(value)
-            || "0".equalsIgnoreCase(value)
-            || "null".equalsIgnoreCase(value)
-            || "N/A".equalsIgnoreCase(value);
+                || "false".equalsIgnoreCase(value)
+                || "0".equalsIgnoreCase(value)
+                || "null".equalsIgnoreCase(value)
+                || "N/A".equalsIgnoreCase(value);
     }
 
     public static boolean isDefault(String value) {
         return "true".equalsIgnoreCase(value)
-            || "default".equalsIgnoreCase(value);
+                || "default".equalsIgnoreCase(value);
     }
 
     /**
@@ -87,11 +85,11 @@ public class ConfigUtils {
      * @param def  Default extension list
      * @return result extension list
      */
-    public static List<String> mergeValues(ExtensionDirector extensionDirector, Class<?> type, String cfg, List<String> def) {
+    public static List<String> mergeValues(Class<?> type, String cfg, List<String> def) {
         List<String> defaults = new ArrayList<String>();
         if (def != null) {
             for (String name : def) {
-                if (extensionDirector.getExtensionLoader(type).hasExtension(name)) {
+                if (ExtensionLoader.getExtensionLoader(type).hasExtension(name)) {
                     defaults.add(name);
                 }
             }
@@ -136,7 +134,7 @@ public class ConfigUtils {
     }
 
     public static String replaceProperty(String expression, Configuration configuration) {
-        if (StringUtils.isEmpty(expression)|| expression.indexOf('$') < 0) {
+        if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {
             return expression;
         }
         Matcher matcher = VARIABLE_PATTERN.matcher(expression);
@@ -160,19 +158,61 @@ public class ConfigUtils {
 
     /**
      * Get dubbo properties.
-     * It is not recommended using this method to modify dubbo properties.
-     *
+     * It is not recommended to use this method to modify dubbo properties.
      * @return
      */
-    public static Properties getProperties(Set<ClassLoader> classLoaders) {
-        String path = System.getProperty(CommonConstants.DUBBO_PROPERTIES_KEY);
-        if (StringUtils.isEmpty(path)) {
-            path = System.getenv(CommonConstants.DUBBO_PROPERTIES_KEY);
-            if (StringUtils.isEmpty(path)) {
-                path = CommonConstants.DEFAULT_DUBBO_PROPERTIES;
+    public static Properties getProperties() {
+        //TODO remove global instance PROPERTIES from ConfigUtils
+        if (PROPERTIES == null) {
+            synchronized (ConfigUtils.class) {
+                if (PROPERTIES == null) {
+                    String path = System.getProperty(CommonConstants.DUBBO_PROPERTIES_KEY);
+                    if (path == null || path.length() == 0) {
+                        path = System.getenv(CommonConstants.DUBBO_PROPERTIES_KEY);
+                        if (path == null || path.length() == 0) {
+                            path = CommonConstants.DEFAULT_DUBBO_PROPERTIES;
+                        }
+                    }
+                    PROPERTIES = ConfigUtils.loadProperties(path, false, true);
+                }
             }
         }
-        return ConfigUtils.loadProperties(classLoaders, path, false, true);
+        return PROPERTIES;
+    }
+
+    /**
+     * This method should be called before Dubbo starting.
+     * It is not recommended to use this method to modify dubbo properties.
+     */
+    public static void setProperties(Properties properties) {
+        PROPERTIES = properties;
+    }
+
+    /**
+     * This method should be called before Dubbo starting.
+     * It is not recommended to use this method to modify dubbo properties.
+     */
+    public static void addProperties(Properties properties) {
+        if (properties != null) {
+            getProperties().putAll(properties);
+        }
+    }
+
+    public static String getProperty(String key) {
+        return getProperty(key, null);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static String getProperty(String key, String defaultValue) {
+        String value = System.getProperty(key);
+        if (value != null && value.length() > 0) {
+            return value;
+        }
+        return getProperty(getProperties(), key, defaultValue);
+    }
+
+    public static String getProperty(Properties properties, String key, String defaultValue) {
+        return replaceProperty(properties.getProperty(key, defaultValue), (Map) properties);
     }
 
     /**
@@ -189,12 +229,12 @@ public class ConfigUtils {
         return value;
     }
 
-    public static Properties loadProperties(Set<ClassLoader> classLoaders, String fileName) {
-        return loadProperties(classLoaders, fileName, false, false);
+    public static Properties loadProperties(String fileName) {
+        return loadProperties(fileName, false, false);
     }
 
-    public static Properties loadProperties(Set<ClassLoader> classLoaders, String fileName, boolean allowMultiFile) {
-        return loadProperties(classLoaders, fileName, allowMultiFile, false);
+    public static Properties loadProperties(String fileName, boolean allowMultiFile) {
+        return loadProperties(fileName, allowMultiFile, false);
     }
 
     /**
@@ -209,7 +249,7 @@ public class ConfigUtils {
      * </ul>
      * @throws IllegalStateException not allow multi-file, but multi-file exist on class path.
      */
-    public static Properties loadProperties(Set<ClassLoader> classLoaders, String fileName, boolean allowMultiFile, boolean optional) {
+    public static Properties loadProperties(String fileName, boolean allowMultiFile, boolean optional) {
         Properties properties = new Properties();
         // add scene judgement in windows environment Fix 2557
         if (checkFileNameExist(fileName)) {
@@ -226,20 +266,18 @@ public class ConfigUtils {
             return properties;
         }
 
-        Set<java.net.URL> set = null;
+        List<java.net.URL> list = new ArrayList<java.net.URL>();
         try {
-            List<ClassLoader> classLoadersToLoad = new LinkedList<>();
-            classLoadersToLoad.add(ClassUtils.getClassLoader());
-            classLoadersToLoad.addAll(classLoaders);
-            set = ClassLoaderResourceLoader.loadResources(fileName, classLoadersToLoad).values().stream().reduce(new LinkedHashSet<>(), (a, i) -> {
-                a.addAll(i);
-                return a;
-            });
+            Enumeration<java.net.URL> urls = ClassUtils.getClassLoader().getResources(fileName);
+            list = new ArrayList<java.net.URL>();
+            while (urls.hasMoreElements()) {
+                list.add(urls.nextElement());
+            }
         } catch (Throwable t) {
             logger.warn("Fail to load " + fileName + " file: " + t.getMessage(), t);
         }
 
-        if (CollectionUtils.isEmpty(set)) {
+        if (list.isEmpty()) {
             if (!optional) {
                 logger.warn("No " + fileName + " found on the class path.");
             }
@@ -247,9 +285,9 @@ public class ConfigUtils {
         }
 
         if (!allowMultiFile) {
-            if (set.size() > 1) {
+            if (list.size() > 1) {
                 String errMsg = String.format("only 1 %s file is expected, but %d dubbo.properties files found on class path: %s",
-                    fileName, set.size(), set);
+                        fileName, list.size(), list.toString());
                 logger.warn(errMsg);
             }
 
@@ -262,9 +300,9 @@ public class ConfigUtils {
             return properties;
         }
 
-        logger.info("load " + fileName + " properties file from " + set);
+        logger.info("load " + fileName + " properties file from " + list);
 
-        for (java.net.URL url : set) {
+        for (java.net.URL url : list) {
             try {
                 Properties p = new Properties();
                 InputStream input = url.openStream();
@@ -287,29 +325,23 @@ public class ConfigUtils {
         return properties;
     }
 
-    public static String loadMigrationRule(Set<ClassLoader> classLoaders, String fileName) {
+    public static String loadMigrationRule(String fileName) {
         String rawRule = "";
         if (checkFileNameExist(fileName)) {
             try {
                 try (FileInputStream input = new FileInputStream(fileName)) {
-                    return readString(input);
+                    rawRule = readString(input);
                 }
             } catch (Throwable e) {
                 logger.warn("Failed to load " + fileName + " file from " + fileName + "(ignore this file): " + e.getMessage(), e);
             }
+            return rawRule;
         }
 
         try {
-            List<ClassLoader> classLoadersToLoad = new LinkedList<>();
-            classLoadersToLoad.add(ClassUtils.getClassLoader());
-            classLoadersToLoad.addAll(classLoaders);
-            for (Set<URL> urls : ClassLoaderResourceLoader.loadResources(fileName, classLoadersToLoad).values()) {
-                for (URL url : urls) {
-                    InputStream is = url.openStream();
-                    if (is != null) {
-                        return readString(is);
-                    }
-                }
+            InputStream is = ClassUtils.getClassLoader().getResourceAsStream(fileName);
+            if (is != null) {
+                rawRule = readString(is);
             }
         } catch (Throwable e) {
             logger.warn("Failed to load " + fileName + " file from " + fileName + "(ignore this file): " + e.getMessage(), e);
@@ -320,7 +352,7 @@ public class ConfigUtils {
     private static String readString(InputStream is) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] buffer = new char[10];
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))){
             int n;
             while ((n = reader.read(buffer)) != -1) {
                 if (n < 10) {
@@ -352,8 +384,7 @@ public class ConfigUtils {
         if (PID < 0) {
             try {
                 RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-                // format: "pid@hostname"
-                String name = runtime.getName();
+                String name = runtime.getName(); // format: "pid@hostname"
                 PID = Integer.parseInt(name.substring(0, name.indexOf('@')));
             } catch (Throwable e) {
                 PID = 0;

@@ -22,7 +22,6 @@ import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.logger.support.FailsafeLogger;
-import org.apache.dubbo.rpc.model.ScopeModel;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -43,12 +42,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import static java.util.Collections.emptyList;
 import static org.apache.dubbo.common.constants.CommonConstants.ANYHOST_VALUE;
 import static org.apache.dubbo.common.constants.CommonConstants.DUBBO_IP_TO_BIND;
-import static org.apache.dubbo.common.constants.CommonConstants.DUBBO_NETWORK_IGNORED_INTERFACE;
 import static org.apache.dubbo.common.constants.CommonConstants.DUBBO_PREFERRED_NETWORK_INTERFACE;
 import static org.apache.dubbo.common.constants.CommonConstants.LOCALHOST_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.LOCALHOST_VALUE;
@@ -102,8 +99,8 @@ public class NetUtils {
     }
 
     public synchronized static int getAvailablePort(int port) {
-         if (port < MIN_PORT) {
-            return MIN_PORT;
+        if (port < MIN_PORT) {
+            return port = MIN_PORT;
         }
         for (int i = port; i < MAX_PORT; i++) {
             if (USED_PORT.get(i)) {
@@ -111,28 +108,12 @@ public class NetUtils {
             }
             try (ServerSocket ignored = new ServerSocket(i)) {
                 USED_PORT.set(i);
-                port = i;
-                break;
+                return i;
             } catch (IOException e) {
                 // continue
             }
         }
         return port;
-    }
-
-
-    /**
-     * Check the port whether is in use in os
-     * @param port
-     * @return
-     */
-    public static boolean isPortInUsed(int port) {
-        try (ServerSocket ignored = new ServerSocket(port)) {
-            return false;
-        } catch (IOException e) {
-            // continue
-        }
-        return true;
     }
 
     public static boolean isInvalidPort(int port) {
@@ -145,8 +126,8 @@ public class NetUtils {
 
     public static boolean isLocalHost(String host) {
         return host != null
-            && (LOCAL_IP_PATTERN.matcher(host).matches()
-            || host.equalsIgnoreCase(LOCALHOST_KEY));
+                && (LOCAL_IP_PATTERN.matcher(host).matches()
+                || host.equalsIgnoreCase(LOCALHOST_KEY));
     }
 
     public static boolean isAnyHost(String host) {
@@ -155,10 +136,10 @@ public class NetUtils {
 
     public static boolean isInvalidLocalHost(String host) {
         return host == null
-            || host.length() == 0
-            || host.equalsIgnoreCase(LOCALHOST_KEY)
-            || host.equals(ANYHOST_VALUE)
-            || host.startsWith("127.");
+                || host.length() == 0
+                || host.equalsIgnoreCase(LOCALHOST_KEY)
+                || host.equals(ANYHOST_VALUE)
+                || host.startsWith("127.");
     }
 
     public static boolean isValidLocalHost(String host) {
@@ -167,7 +148,7 @@ public class NetUtils {
 
     public static InetSocketAddress getLocalSocketAddress(String host, int port) {
         return isInvalidLocalHost(host) ?
-            new InetSocketAddress(port) : new InetSocketAddress(host, port);
+                new InetSocketAddress(port) : new InetSocketAddress(host, port);
     }
 
     static boolean isValidV4Address(InetAddress address) {
@@ -177,9 +158,9 @@ public class NetUtils {
 
         String name = address.getHostAddress();
         return (name != null
-            && IP_PATTERN.matcher(name).matches()
-            && !ANYHOST_VALUE.equals(name)
-            && !LOCALHOST_VALUE.equals(name));
+                && IP_PATTERN.matcher(name).matches()
+                && !ANYHOST_VALUE.equals(name)
+                && !LOCALHOST_VALUE.equals(name));
     }
 
     /**
@@ -255,13 +236,15 @@ public class NetUtils {
         return host;
     }
 
-    public static String getIpByConfig(ScopeModel scopeModel) {
-        String configIp = ConfigurationUtils.getProperty(scopeModel, DUBBO_IP_TO_BIND);
+    public static String getIpByConfig() {
+        String configIp = ConfigurationUtils.getProperty(DUBBO_IP_TO_BIND);
         if (configIp != null) {
             return configIp;
         }
 
-        return getLocalHost();
+        InetAddress localAddress = getLocalAddress();
+        String hostName = localAddress == null ? LOCALHOST_VALUE : localAddress.getHostName();
+        return getIpByHost(hostName);
     }
 
     /**
@@ -329,48 +312,22 @@ public class NetUtils {
     }
 
     /**
-     * Returns {@code true} if the specified {@link NetworkInterface} should be ignored with the given conditions.
-     *
-     * @param networkInterface the {@link NetworkInterface} to check
-     * @return {@code true} if the specified {@link NetworkInterface} should be ignored, otherwise {@code false}
+     * @param networkInterface {@link NetworkInterface}
+     * @return if the specified {@link NetworkInterface} should be ignored, return <code>true</code>
      * @throws SocketException SocketException if an I/O error occurs.
+     * @since 2.7.6
      */
     private static boolean ignoreNetworkInterface(NetworkInterface networkInterface) throws SocketException {
-        if (networkInterface == null
-            || networkInterface.isLoopback()
-            || networkInterface.isVirtual()
-            || !networkInterface.isUp()) {
-            return true;
-        }
-        String ignoredInterfaces = System.getProperty(DUBBO_NETWORK_IGNORED_INTERFACE);
-        String networkInterfaceDisplayName;
-        if (StringUtils.isNotEmpty(ignoredInterfaces)
-            && StringUtils.isNotEmpty(networkInterfaceDisplayName = networkInterface.getDisplayName())) {
-            for (String ignoredInterface : ignoredInterfaces.split(",")) {
-                String trimIgnoredInterface = ignoredInterface.trim();
-                boolean matched = false;
-                try {                     
-                    matched = networkInterfaceDisplayName.matches(trimIgnoredInterface);
-                } catch (PatternSyntaxException e) {
-                    // if trimIgnoredInterface is a invalid regular expression, a PatternSyntaxException will be thrown out
-                    logger.warn("exception occurred: " + networkInterfaceDisplayName + " matches " + trimIgnoredInterface, e);
-                } finally {
-                    if (matched) {
-                        return true;
-                    }
-                    if (networkInterfaceDisplayName.equals(trimIgnoredInterface)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return networkInterface == null
+                || networkInterface.isLoopback()
+                || networkInterface.isVirtual()
+                || !networkInterface.isUp();
     }
 
     /**
      * Get the valid {@link NetworkInterface network interfaces}
      *
-     * @return the valid {@link NetworkInterface}s
+     * @return non-null
      * @throws SocketException SocketException if an I/O error occurs.
      * @since 2.7.6
      */
@@ -433,7 +390,8 @@ public class NetUtils {
                     if (addressOp.isPresent()) {
                         try {
                             if (addressOp.get().isReachable(100)) {
-                                return networkInterface;
+                                result = networkInterface;
+                                break;
                             }
                         } catch (IOException e) {
                             // ignore
@@ -514,7 +472,7 @@ public class NetUtils {
     }
 
     public static void joinMulticastGroup(MulticastSocket multicastSocket, InetAddress multicastAddress) throws
-        IOException {
+            IOException {
         setInterface(multicastSocket, multicastAddress instanceof Inet6Address);
         multicastSocket.setLoopbackMode(false);
         multicastSocket.joinGroup(multicastAddress);
@@ -607,7 +565,7 @@ public class NetUtils {
         if (!ipPatternContainExpression(pattern)) {
             InetAddress patternAddress = InetAddress.getByName(pattern);
             return patternAddress.getHostAddress().equals(host);
-        }
+            }
 
         String[] ipAddress = host.split(splitCharacter);
         for (int i = 0; i < mask.length; i++) {
@@ -643,7 +601,7 @@ public class NetUtils {
         int i = host.indexOf('.');
         if (i > 0) {
             String prefix = host.substring(0, i);
-            if (StringUtils.isNumber(prefix)) {
+            if (StringUtils.isInteger(prefix)) {
                 int p = Integer.parseInt(prefix);
                 return p >= 224 && p <= 239;
             }

@@ -17,31 +17,18 @@
 
 package org.apache.dubbo.rpc.cluster.merger;
 
-import org.apache.dubbo.common.logger.Logger;
-import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.common.utils.TypeUtils;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.utils.ReflectUtils;
 import org.apache.dubbo.rpc.cluster.Merger;
-import org.apache.dubbo.rpc.model.ScopeModel;
-import org.apache.dubbo.rpc.model.ScopeModelAware;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class MergerFactory implements ScopeModelAware {
+public class MergerFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(MergerFactory.class);
-
-    private ConcurrentMap<Class<?>, Merger<?>> MERGER_CACHE = new ConcurrentHashMap<Class<?>, Merger<?>>();
-    private ScopeModel scopeModel;
-
-    @Override
-    public void setScopeModel(ScopeModel scopeModel) {
-        this.scopeModel = scopeModel;
-    }
+    private static final ConcurrentMap<Class<?>, Merger<?>> MERGER_CACHE =
+            new ConcurrentHashMap<Class<?>, Merger<?>>();
 
     /**
      * Find the merger according to the returnType class, the merger will
@@ -51,56 +38,39 @@ public class MergerFactory implements ScopeModelAware {
      * @return the merger which merges an array of returnType into one, return null if not exist
      * @throws IllegalArgumentException if returnType is null
      */
-    public <T> Merger<T> getMerger(Class<T> returnType) {
+    public static <T> Merger<T> getMerger(Class<T> returnType) {
         if (returnType == null) {
             throw new IllegalArgumentException("returnType is null");
         }
 
-        if (CollectionUtils.isEmptyMap(MERGER_CACHE)) {
-            loadMergers();
+        Merger result;
+        if (returnType.isArray()) {
+            Class type = returnType.getComponentType();
+            result = MERGER_CACHE.get(type);
+            if (result == null) {
+                loadMergers();
+                result = MERGER_CACHE.get(type);
+            }
+            if (result == null && !type.isPrimitive()) {
+                result = ArrayMerger.INSTANCE;
+            }
+        } else {
+            result = MERGER_CACHE.get(returnType);
+            if (result == null) {
+                loadMergers();
+                result = MERGER_CACHE.get(returnType);
+            }
         }
-        Merger merger = MERGER_CACHE.get(returnType);
-        if (merger == null && returnType.isArray()) {
-            merger = ArrayMerger.INSTANCE;
-        }
-        return merger;
+        return result;
     }
 
-    private void loadMergers() {
-        Set<String> names = scopeModel.getExtensionLoader(Merger.class)
-            .getSupportedExtensions();
+    static void loadMergers() {
+        Set<String> names = ExtensionLoader.getExtensionLoader(Merger.class)
+                .getSupportedExtensions();
         for (String name : names) {
-            Merger m = scopeModel.getExtensionLoader(Merger.class).getExtension(name);
-            Class<?> actualTypeArg = getActualTypeArgument(m.getClass());
-            if (actualTypeArg == null) {
-                logger.warn("Failed to get actual type argument from merger " + m.getClass().getName());
-                continue;
-            }
-            MERGER_CACHE.putIfAbsent(actualTypeArg, m);
+            Merger m = ExtensionLoader.getExtensionLoader(Merger.class).getExtension(name);
+            MERGER_CACHE.putIfAbsent(ReflectUtils.getGenericClass(m.getClass()), m);
         }
     }
 
-    /**
-     * get merger's actual type argument (same as return type)
-     * @param mergerCls
-     * @return
-     */
-    private Class<?> getActualTypeArgument(Class<? extends Merger> mergerCls) {
-        Class<?> superClass = mergerCls;
-        while (superClass != Object.class) {
-            Type[] interfaceTypes = superClass.getGenericInterfaces();
-            ParameterizedType mergerType;
-            for (Type it : interfaceTypes) {
-                if (it instanceof ParameterizedType
-                    && (mergerType = ((ParameterizedType) it)).getRawType() == Merger.class) {
-                    Type typeArg = mergerType.getActualTypeArguments()[0];
-                    return TypeUtils.getRawClass(typeArg);
-                }
-            }
-
-            superClass = superClass.getSuperclass();
-        }
-
-        return null;
-    }
 }

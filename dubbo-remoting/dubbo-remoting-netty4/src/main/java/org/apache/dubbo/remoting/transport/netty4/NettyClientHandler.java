@@ -141,6 +141,10 @@ public class NettyClientHandler extends ChannelDuplexHandler {
         }
     }
 
+    public void handshakeCompleted(SslHandlerInitializer.HandshakeCompletionEvent evt) {
+        // TODO
+    }
+
     /**
      * build a bad request's response
      *

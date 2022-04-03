@@ -24,7 +24,6 @@ import org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotati
 import org.springframework.beans.factory.annotation.InjectionMetadata;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,7 +37,7 @@ public class DubboReferencesMetadata extends AbstractDubboMetadata {
 
     public Map<String, Map<String, Object>> references() {
 
-        Map<String, Map<String, Object>> referencesMetadata = new HashMap<>();
+        Map<String, Map<String, Object>> referencesMetadata = new LinkedHashMap<>();
 
         ReferenceAnnotationBeanPostProcessor beanPostProcessor = getReferenceAnnotationBeanPostProcessor();
 
@@ -51,7 +50,7 @@ public class DubboReferencesMetadata extends AbstractDubboMetadata {
 
     private Map<String, Map<String, Object>> buildReferencesMetadata(
             Map<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedElementReferenceBeanMap) {
-        Map<String, Map<String, Object>> referencesMetadata = new HashMap<>();
+        Map<String, Map<String, Object>> referencesMetadata = new LinkedHashMap<>();
 
         for (Map.Entry<InjectionMetadata.InjectedElement, ReferenceBean<?>> entry :
                 injectedElementReferenceBeanMap.entrySet()) {

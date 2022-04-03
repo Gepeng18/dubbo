@@ -16,25 +16,40 @@
  */
 package org.apache.dubbo.metadata.report.identifier;
 
+import static org.apache.dubbo.common.constants.CommonConstants.PATH_SEPARATOR;
+import static org.apache.dubbo.common.utils.PathUtils.buildPath;
 import static org.apache.dubbo.metadata.MetadataConstants.DEFAULT_PATH_TAG;
+import static org.apache.dubbo.metadata.MetadataConstants.KEY_SEPARATOR;
 
 /**
- * The Base class of MetadataIdentifier for application scope
+ * The Base class of MetadataIdentifier for service scope
  * <p>
  * 2019-08-09
  */
 public class BaseApplicationMetadataIdentifier {
-    protected String application;
+    String application;
 
-    protected String getUniqueKey(KeyTypeEnum keyType, String... params) {
+    String getUniqueKey(KeyTypeEnum keyType, String... params) {
         if (keyType == KeyTypeEnum.PATH) {
             return getFilePathKey(params);
         }
         return getIdentifierKey(params);
     }
 
-    protected String getIdentifierKey(String... params) {
-        return KeyTypeEnum.UNIQUE_KEY.build(application,params);
+    String getIdentifierKey(String... params) {
+        return application + joinParams(KEY_SEPARATOR, params);
+    }
+
+    private String joinParams(String joinChar, String... params) {
+        if (params == null || params.length == 0) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String param : params) {
+            sb.append(joinChar);
+            sb.append(param);
+        }
+        return sb.toString();
     }
 
     private String getFilePathKey(String... params) {
@@ -42,8 +57,7 @@ public class BaseApplicationMetadataIdentifier {
     }
 
     private String getFilePathKey(String pathTag, String... params) {
-        String prefix = KeyTypeEnum.PATH.build(pathTag, application);
-        return KeyTypeEnum.PATH.build(prefix, params);
+        return buildPath(pathTag, application, joinParams(PATH_SEPARATOR, params));
     }
 
 }

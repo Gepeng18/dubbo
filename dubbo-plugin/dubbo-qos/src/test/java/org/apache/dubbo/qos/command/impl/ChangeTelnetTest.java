@@ -17,20 +17,17 @@
 package org.apache.dubbo.qos.command.impl;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.qos.command.BaseCommand;
 import org.apache.dubbo.qos.command.CommandContext;
+import org.apache.dubbo.qos.legacy.ProtocolUtils;
 import org.apache.dubbo.qos.legacy.service.DemoService;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Protocol;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol;
 
 import io.netty.channel.Channel;
 import io.netty.util.DefaultAttributeMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +38,7 @@ import static org.mockito.Mockito.reset;
 
 public class ChangeTelnetTest {
     private final DefaultAttributeMap defaultAttributeMap = new DefaultAttributeMap();
-    private BaseCommand change;
+    private static final BaseCommand change = new ChangeTelnet();
 
     private Channel mockChannel;
     private CommandContext mockCommandContext;
@@ -49,19 +46,12 @@ public class ChangeTelnetTest {
 
     @AfterAll
     public static void tearDown() {
-        FrameworkModel.destroyAll();
-    }
 
-    @BeforeAll
-    public static void setUp() {
-        FrameworkModel.destroyAll();
     }
 
     @SuppressWarnings("unchecked")
     @BeforeEach
-    public void beforeEach() {
-        change = new ChangeTelnet(FrameworkModel.defaultModel());
-
+    public void setUp() {
         mockCommandContext = mock(CommandContext.class);
         mockChannel = mock(Channel.class);
         mockInvoker = mock(Invoker.class);
@@ -74,21 +64,21 @@ public class ChangeTelnetTest {
     }
 
     @AfterEach
-    public void afterEach() {
-        FrameworkModel.destroyAll();
+    public void after() {
+        ProtocolUtils.closeAll();
         reset(mockCommandContext, mockChannel, mockInvoker);
     }
 
     @Test
     public void testChangeSimpleName() {
-        ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME).export(mockInvoker);
+        DubboProtocol.getDubboProtocol().export(mockInvoker);
         String result = change.execute(mockCommandContext, new String[]{"DemoService"});
         assertEquals("Used the DemoService as default.\r\nYou can cancel default service by command: cd /", result);
     }
 
     @Test
     public void testChangeName() {
-        ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME).export(mockInvoker);
+        DubboProtocol.getDubboProtocol().export(mockInvoker);
         String result = change.execute(mockCommandContext, new String[]{"org.apache.dubbo.qos.legacy.service.DemoService"});
         assertEquals("Used the org.apache.dubbo.qos.legacy.service.DemoService as default.\r\nYou can cancel default service by command: cd /",
             result);
@@ -96,7 +86,7 @@ public class ChangeTelnetTest {
 
     @Test
     public void testChangePath() {
-        ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME).export(mockInvoker);
+        DubboProtocol.getDubboProtocol().export(mockInvoker);
         String result = change.execute(mockCommandContext, new String[]{"demo"});
         assertEquals("Used the demo as default.\r\nYou can cancel default service by command: cd /", result);
     }

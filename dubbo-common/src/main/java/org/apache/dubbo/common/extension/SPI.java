@@ -61,8 +61,4 @@ public @interface SPI {
      */
     String value() default "";
 
-    /**
-     * scope of SPI, default value is application scope.
-     */
-    ExtensionScope scope() default ExtensionScope.APPLICATION;
 }

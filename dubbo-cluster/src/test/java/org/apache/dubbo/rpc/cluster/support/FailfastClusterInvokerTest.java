@@ -32,9 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -44,7 +42,7 @@ import static org.mockito.Mockito.mock;
  */
 @SuppressWarnings("unchecked")
 public class FailfastClusterInvokerTest {
-    List<Invoker<FailfastClusterInvokerTest>> invokers = new ArrayList<>();
+    List<Invoker<FailfastClusterInvokerTest>> invokers = new ArrayList<Invoker<FailfastClusterInvokerTest>>();
     URL url = URL.valueOf("test://test:11/test");
     Invoker<FailfastClusterInvokerTest> invoker1 = mock(Invoker.class);
     RpcInvocation invocation = new RpcInvocation();
@@ -86,39 +84,23 @@ public class FailfastClusterInvokerTest {
     public void testInvokeException() {
         Assertions.assertThrows(RpcException.class, () -> {
             resetInvoker1ToException();
-            FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<>(dic);
+            FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<FailfastClusterInvokerTest>(dic);
             invoker.invoke(invocation);
-            assertSame(invoker1, RpcContext.getServiceContext().getInvoker());
+            Assertions.assertSame(invoker1, RpcContext.getServiceContext().getInvoker());
         });
     }
 
-    @Test
-    public void testInvokeBizException() {
-        given(invoker1.invoke(invocation)).willThrow(new RpcException(RpcException.BIZ_EXCEPTION));
-        given(invoker1.getUrl()).willReturn(url);
-        given(invoker1.getInterface()).willReturn(FailfastClusterInvokerTest.class);
-        FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<>(dic);
-
-        try {
-            Result ret = invoker.invoke(invocation);
-            assertSame(result, ret);
-            fail();
-        } catch (RpcException expected) {
-            assertEquals(expected.getCode(), RpcException.BIZ_EXCEPTION);
-        }
-    }
-
-    @Test
+    @Test()
     public void testInvokeNoException() {
 
         resetInvoker1ToNoException();
 
-        FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<>(dic);
+        FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<FailfastClusterInvokerTest>(dic);
         Result ret = invoker.invoke(invocation);
-        assertSame(result, ret);
+        Assertions.assertSame(result, ret);
     }
 
-    @Test
+    @Test()
     public void testNoInvoke() {
         dic = mock(Directory.class);
 
@@ -133,7 +115,7 @@ public class FailfastClusterInvokerTest {
 
         resetInvoker1ToNoException();
 
-        FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<>(dic);
+        FailfastClusterInvoker<FailfastClusterInvokerTest> invoker = new FailfastClusterInvoker<FailfastClusterInvokerTest>(dic);
         try {
             invoker.invoke(invocation);
             fail();

@@ -16,21 +16,16 @@
  */
 package org.apache.dubbo.registry;
 
-import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.logger.Logger;
-import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.threadpool.manager.FrameworkExecutorRepository;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.threadpool.manager.ExecutorRepository;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_DELAY_EXECUTE_TIMES;
-
 public abstract class RegistryNotifier {
 
-    private static final Logger logger = LoggerFactory.getLogger(RegistryNotifier.class);
     private volatile long lastExecuteTime;
     private volatile long lastEventTime;
 
@@ -44,15 +39,15 @@ public abstract class RegistryNotifier {
 
     private ScheduledExecutorService scheduler;
 
-    public RegistryNotifier(URL registryUrl, long delayTime) {
-        this(registryUrl, delayTime, null);
+    public RegistryNotifier(long delayTime) {
+        this(delayTime, null);
     }
 
-    public RegistryNotifier(URL registryUrl, long delayTime, ScheduledExecutorService scheduler) {
+    public RegistryNotifier(long delayTime, ScheduledExecutorService scheduler) {
         this.delayTime = delayTime;
         if (scheduler == null) {
-            this.scheduler = registryUrl.getOrDefaultFrameworkModel().getBeanFactory()
-                .getBean(FrameworkExecutorRepository.class).getRegistryNotificationExecutor();
+            this.scheduler = ExtensionLoader.getExtensionLoader(ExecutorRepository.class)
+                    .getDefaultExtension().getRegistryNotificationExecutor();
         } else {
             this.scheduler = scheduler;
         }
@@ -71,7 +66,7 @@ public abstract class RegistryNotifier {
             scheduler.schedule(new NotificationTask(this, notifyTime), -delta, TimeUnit.MILLISECONDS);
         } else {
             // check if more than 10 calls
-            if (!shouldDelay.get() && executeTime.incrementAndGet() > DEFAULT_DELAY_EXECUTE_TIMES) {
+            if (!shouldDelay.get() && executeTime.incrementAndGet() > 10) {
                 shouldDelay.set(true);
             }
             scheduler.submit(new NotificationTask(this, notifyTime));
@@ -95,18 +90,14 @@ public abstract class RegistryNotifier {
 
         @Override
         public void run() {
-            try {
-                if (this.time == listener.lastEventTime) {
-                    listener.doNotify(listener.rawAddresses);
-                    listener.lastExecuteTime = System.currentTimeMillis();
-                    synchronized (listener) {
-                        if (this.time == listener.lastEventTime) {
-                            listener.rawAddresses = null;
-                        }
+            if (this.time == listener.lastEventTime) {
+                listener.doNotify(listener.rawAddresses);
+                listener.lastExecuteTime = System.currentTimeMillis();
+                synchronized (listener) {
+                    if (this.time == listener.lastEventTime) {
+                        listener.rawAddresses = null;
                     }
                 }
-            } catch (Throwable t) {
-                logger.error("Error occurred when notify directory. ", t);
             }
         }
     }

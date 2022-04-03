@@ -23,8 +23,9 @@ import org.apache.dubbo.config.ReferenceConfigBase;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.ProtocolServer;
 import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.model.FrameworkServiceRepository;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.ProviderModel;
+import org.apache.dubbo.rpc.model.ServiceRepository;
 import org.apache.dubbo.rpc.protocol.AbstractProxyProtocol;
 
 import io.grpc.BindableService;
@@ -71,7 +72,7 @@ public class GrpcProtocol extends AbstractProxyProtocol {
 
         GrpcRemotingServer grpcServer = (GrpcRemotingServer) protocolServer.getRemotingServer();
 
-        FrameworkServiceRepository serviceRepository = frameworkModel.getServiceRepository();
+        ServiceRepository serviceRepository = ApplicationModel.getServiceRepository();
         ProviderModel providerModel = serviceRepository.lookupExportedService(url.getServiceKey());
         if (providerModel == null) {
             throw new IllegalStateException("Service " + url.getServiceKey() + "should have already been stored in service repository, " +
@@ -118,12 +119,11 @@ public class GrpcProtocol extends AbstractProxyProtocol {
 
         // CallOptions
         try {
-            ReferenceConfigBase<?> referenceConfig = url.getServiceModel().getReferenceConfig();
             @SuppressWarnings("unchecked") final T stub = (T) dubboStubMethod.invoke(null,
                     channel,
                     GrpcOptionsUtils.buildCallOptions(url),
                     url,
-                    referenceConfig
+                    ApplicationModel.getConsumerModel(url.getServiceKey()).getReferenceConfig()
             );
             final Invoker<T> target = proxyFactory.getInvoker(stub, type, url);
             GrpcInvoker<T> grpcInvoker = new GrpcInvoker<>(type, url, target, channel);
@@ -190,9 +190,6 @@ public class GrpcProtocol extends AbstractProxyProtocol {
 
     @Override
     public void destroy() {
-        if (logger.isInfoEnabled()) {
-            logger.info("Destroying protocol [" + this.getClass().getSimpleName() + "] ...");
-        }
         serverMap.values().forEach(ProtocolServer::close);
         channelMap.values().forEach(ReferenceCountManagedChannel::shutdown);
         serverMap.clear();

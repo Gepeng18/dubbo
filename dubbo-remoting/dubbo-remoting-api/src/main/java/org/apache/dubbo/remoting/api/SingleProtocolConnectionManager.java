@@ -17,6 +17,7 @@
 package org.apache.dubbo.remoting.api;
 
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.remoting.RemotingException;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -24,19 +25,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public class SingleProtocolConnectionManager implements ConnectionManager {
-    public static final String NAME = "single";
-
     private final ConcurrentMap<String, Connection> connections = PlatformDependent.newConcurrentHashMap();
 
     @Override
-    public Connection connect(URL url) {
+    public Connection connect(URL url) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
         }
         return connections.compute(url.getAddress(), (address, conn) -> {
             if (conn == null) {
                 final Connection created = new Connection(url);
-                created.getClosePromise().addListener(future -> connections.remove(address, created));
+                created.getCloseFuture().addListener(future -> connections.remove(address, created));
                 return created;
             } else {
                 conn.retain();

@@ -17,16 +17,14 @@
 package org.apache.dubbo.qos.command.impl;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.qos.command.BaseCommand;
 import org.apache.dubbo.qos.command.CommandContext;
 import org.apache.dubbo.qos.command.impl.channel.MockNettyChannel;
+import org.apache.dubbo.qos.legacy.ProtocolUtils;
 import org.apache.dubbo.qos.legacy.service.DemoService;
 import org.apache.dubbo.remoting.telnet.support.TelnetUtils;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Protocol;
 import org.apache.dubbo.rpc.RpcStatus;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol;
 
 import org.junit.jupiter.api.AfterEach;
@@ -44,7 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 
 public class CountTelnetTest {
-    private BaseCommand count;
+    private static final BaseCommand count = new CountTelnet();
 
     private MockNettyChannel mockChannel;
     private Invoker<DemoService> mockInvoker;
@@ -56,7 +54,6 @@ public class CountTelnetTest {
 
     @BeforeEach
     public void setUp() {
-        count = new CountTelnet(FrameworkModel.defaultModel());
         latch = new CountDownLatch(2);
         mockInvoker = mock(Invoker.class);
         mockCommandContext = mock(CommandContext.class);
@@ -69,7 +66,7 @@ public class CountTelnetTest {
 
     @AfterEach
     public void tearDown() {
-        FrameworkModel.destroyAll();
+        ProtocolUtils.closeAll();
         mockChannel.close();
         reset(mockInvoker, mockCommandContext);
     }
@@ -79,7 +76,7 @@ public class CountTelnetTest {
         String methodName = "sayHello";
         String[] args = new String[]{"org.apache.dubbo.qos.legacy.service.DemoService", "sayHello", "1"};
 
-        ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME).export(mockInvoker);
+        DubboProtocol.getDubboProtocol().export(mockInvoker);
         RpcStatus.beginCount(url, methodName);
         RpcStatus.endCount(url, methodName, 10L, true);
         count.execute(mockCommandContext, args);

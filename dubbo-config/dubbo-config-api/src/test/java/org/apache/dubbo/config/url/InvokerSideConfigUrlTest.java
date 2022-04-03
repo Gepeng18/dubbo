@@ -136,13 +136,13 @@ public class InvokerSideConfigUrlTest extends UrlTestBase {
     public void setUp() {
         initServConf();
         initRefConf();
-//        ApplicationModel.defaultModel().getConfigManager().clear();
+//        ApplicationModel.getConfigManager().clear();
     }
 
     @AfterEach()
     public void teardown() {
         //RegistryServer.reloadCache();
-//        ApplicationModel.defaultModel().getConfigManager().clear();
+//        ApplicationModel.getConfigManager().clear();
     }
 
 

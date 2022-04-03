@@ -16,7 +16,6 @@
  */
 package org.apache.dubbo.remoting;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 
@@ -26,7 +25,7 @@ import org.apache.dubbo.common.extension.SPI;
  * @see org.apache.dubbo.remoting.Transporter#bind(org.apache.dubbo.common.URL, ChannelHandler)
  * @see org.apache.dubbo.remoting.Transporter#connect(org.apache.dubbo.common.URL, ChannelHandler)
  */
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 public interface ChannelHandler {
 
     /**

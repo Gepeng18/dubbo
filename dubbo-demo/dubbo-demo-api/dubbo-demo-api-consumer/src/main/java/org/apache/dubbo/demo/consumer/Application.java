@@ -16,13 +16,12 @@
  */
 package org.apache.dubbo.demo.consumer;
 
-import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.MetadataReportConfig;
-import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.config.utils.ReferenceConfigCache;
 import org.apache.dubbo.demo.DemoService;
 import org.apache.dubbo.rpc.service.GenericService;
 
@@ -46,19 +45,18 @@ public class Application {
 
         DubboBootstrap bootstrap = DubboBootstrap.getInstance();
         bootstrap.application(new ApplicationConfig("dubbo-demo-api-consumer"))
-            .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
-            .protocol(new ProtocolConfig(CommonConstants.DUBBO, -1))
-            .reference(reference)
-            .start();
+                .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
+                .reference(reference)
+                .start();
 
-        DemoService demoService = bootstrap.getCache().get(reference);
+        DemoService demoService = ReferenceConfigCache.getCache().get(reference);
         String message = demoService.sayHello("dubbo");
         System.out.println(message);
 
         // generic invoke
         GenericService genericService = (GenericService) demoService;
-        Object genericInvokeResult = genericService.$invoke("sayHello", new String[]{String.class.getName()},
-            new Object[]{"dubbo generic invoke"});
+        Object genericInvokeResult = genericService.$invoke("sayHello", new String[] { String.class.getName() },
+                new Object[] { "dubbo generic invoke" });
         System.out.println(genericInvokeResult);
     }
 

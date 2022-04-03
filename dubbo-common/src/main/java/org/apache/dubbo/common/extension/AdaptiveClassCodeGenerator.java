@@ -20,13 +20,10 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.rpc.model.ScopeModel;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -66,8 +63,7 @@ public class AdaptiveClassCodeGenerator {
                     + "String methodName = arg%d.getMethodName();\n";
 
 
-    private static final String CODE_SCOPE_MODEL_ASSIGNMENT = "ScopeModel scopeModel = ScopeModelUtil.getOrDefault(url.getScopeModel(), %s.class);\n";
-    private static final String CODE_EXTENSION_ASSIGNMENT = "%s extension = (%<s)scopeModel.getExtensionLoader(%s.class).getExtension(extName);\n";
+    private static final String CODE_EXTENSION_ASSIGNMENT = "%s extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);\n";
 
     private static final String CODE_EXTENSION_METHOD_INVOKE_ARGUMENT = "arg%d";
 
@@ -91,14 +87,6 @@ public class AdaptiveClassCodeGenerator {
      * generate and return class code
      */
     public String generate() {
-        return this.generate(false);
-    }
-
-    /**
-     * generate and return class code
-     * @param sort - whether sort methods
-     */
-    public String generate(boolean sort) {
         // no need to generate adaptive class since there's no adaptive method found.
         if (!hasAdaptiveMethod()) {
             throw new IllegalStateException("No adaptive method exist on extension " + type.getName() + ", refuse to create the adaptive class!");
@@ -110,9 +98,6 @@ public class AdaptiveClassCodeGenerator {
         code.append(generateClassDeclaration());
 
         Method[] methods = type.getMethods();
-        if (sort) {
-            Arrays.sort(methods, Comparator.comparing(Method::toString));
-        }
         for (Method method : methods) {
             code.append(generateMethod(method));
         }
@@ -135,10 +120,7 @@ public class AdaptiveClassCodeGenerator {
      * generate imports
      */
     private String generateImports() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(String.format(CODE_IMPORTS, ScopeModel.class.getName()));
-        builder.append(String.format(CODE_IMPORTS, ScopeModelUtil.class.getName()));
-        return builder.toString();
+        return String.format(CODE_IMPORTS, ExtensionLoader.class.getName());
     }
 
     /**
@@ -242,7 +224,6 @@ public class AdaptiveClassCodeGenerator {
             // check extName == null?
             code.append(generateExtNameNullCheck(value));
 
-            code.append(generateScopeModelAssignment());
             code.append(generateExtensionAssignment());
 
             // return statement
@@ -307,12 +288,8 @@ public class AdaptiveClassCodeGenerator {
     /**
      * @return
      */
-    private String generateScopeModelAssignment() {
-        return String.format(CODE_SCOPE_MODEL_ASSIGNMENT, type.getName());
-    }
-
     private String generateExtensionAssignment() {
-        return String.format(CODE_EXTENSION_ASSIGNMENT, type.getName(), type.getName());
+        return String.format(CODE_EXTENSION_ASSIGNMENT, type.getName(), ExtensionLoader.class.getSimpleName(), type.getName());
     }
 
     /**

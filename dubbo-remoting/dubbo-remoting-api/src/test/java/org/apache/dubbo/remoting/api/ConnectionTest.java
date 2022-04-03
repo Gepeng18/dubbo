@@ -17,8 +17,8 @@
 package org.apache.dubbo.remoting.api;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.utils.NetUtils;
 
+import org.apache.dubbo.common.utils.NetUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,18 +30,18 @@ class ConnectionTest {
     public void testRefCnt0() throws InterruptedException {
         Connection connection = new Connection(URL.valueOf("empty://127.0.0.1:8080?foo=bar"));
         CountDownLatch latch = new CountDownLatch(1);
-        connection.getClosePromise().addListener(future -> latch.countDown());
+        connection.getCloseFuture().addListener(future -> latch.countDown());
         connection.release();
         latch.await();
         Assertions.assertEquals(0, latch.getCount());
     }
 
     @Test
-    public void testRefCnt1() {
+    public void testRefCnt1() throws InterruptedException {
         Connection connection = new Connection(URL.valueOf("empty://127.0.0.1:8080?foo=bar"));
         CountDownLatch latch = new CountDownLatch(1);
         connection.retain();
-        connection.getClosePromise().addListener(future -> latch.countDown());
+        connection.getCloseFuture().addListener(future -> latch.countDown());
         connection.release();
         Assertions.assertEquals(1, latch.getCount());
     }
@@ -51,41 +51,24 @@ class ConnectionTest {
         Connection connection = new Connection(URL.valueOf("empty://127.0.0.1:8080?foo=bar"));
         CountDownLatch latch = new CountDownLatch(1);
         connection.retain();
-        connection.getClosePromise().addListener(future -> latch.countDown());
+        connection.getCloseFuture().addListener(future -> latch.countDown());
         connection.release(2);
         latch.await();
         Assertions.assertEquals(0, latch.getCount());
     }
 
     @Test
-    public void connectSyncTest() throws Throwable {
+    public void connectSyncTest() throws Exception {
         int port = NetUtils.getAvailablePort();
         URL url = URL.valueOf("empty://127.0.0.1:" + port + "?foo=bar");
-        PortUnificationServer server = null;
-        try {
-            server = new PortUnificationServer(url);
-            server.bind();
+        PortUnificationServer server = new PortUnificationServer(url);
+        server.bind();
 
-            Connection connection = new Connection(url);
-            Assertions.assertTrue(connection.isAvailable());
+        Connection connection = new Connection(url);
+        connection.connectSync();
+        Assertions.assertTrue(connection.isAvailable());
 
-            server.close();
-            Assertions.assertFalse(connection.isAvailable());
-
-            server.bind();
-            // auto reconnect
-            Assertions.assertTrue(connection.isAvailable());
-
-            connection.close();
-            Assertions.assertFalse(connection.isAvailable());
-        } finally {
-            try {
-                server.close();
-            } catch (Throwable e) {
-                // ignored
-            }
-        }
-
-
+        connection.close();
+        Assertions.assertFalse(connection.isAvailable());
     }
 }

@@ -20,7 +20,7 @@ package org.apache.dubbo.registry;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Activate;
 
-@Activate(order = 1, value = "listener-one")
+@Activate(order = 1)
 public class RegistryServiceListener1 implements RegistryServiceListener {
     static RegistryServiceListener delegate;
 

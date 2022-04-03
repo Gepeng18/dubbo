@@ -17,8 +17,7 @@
 package org.apache.dubbo.monitor.dubbo;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionAccessor;
-import org.apache.dubbo.common.extension.ExtensionAccessorAware;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.store.DataStore;
@@ -31,8 +30,6 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Protocol;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.model.ApplicationModel;
-import org.apache.dubbo.rpc.model.ScopeModelAware;
 import org.apache.dubbo.rpc.support.RpcUtils;
 
 import com.alibaba.fastjson.JSON;
@@ -59,36 +56,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_PROTOCOL;
 import static org.apache.dubbo.common.constants.CommonConstants.EXECUTOR_SERVICE_COMPONENT_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.METHOD_KEY;
+import static org.apache.dubbo.common.constants.CommonConstants.METRICS_PORT;
+import static org.apache.dubbo.common.constants.CommonConstants.METRICS_PROTOCOL;
 import static org.apache.dubbo.common.constants.CommonConstants.PROVIDER;
 import static org.apache.dubbo.monitor.Constants.DUBBO_CONSUMER;
 import static org.apache.dubbo.monitor.Constants.DUBBO_CONSUMER_METHOD;
 import static org.apache.dubbo.monitor.Constants.DUBBO_GROUP;
 import static org.apache.dubbo.monitor.Constants.DUBBO_PROVIDER;
 import static org.apache.dubbo.monitor.Constants.DUBBO_PROVIDER_METHOD;
+import static org.apache.dubbo.monitor.Constants.METHOD;
 import static org.apache.dubbo.monitor.Constants.SERVICE;
 
-/**
- * @deprecated After metrics config is refactored.
- * This filter should no longer use and will be deleted in the future.
- */
-@Deprecated
-public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModelAware {
+public class MetricsFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsFilter.class);
     protected static volatile AtomicBoolean exported = new AtomicBoolean(false);
     private Integer port;
     private String protocolName;
-    private ExtensionAccessor extensionAccessor;
-    private ApplicationModel applicationModel;
-
-    private static final String METRICS_PORT = "metrics.port";
-    private static final String METRICS_PROTOCOL = "metrics.protocol";
-
-    @Override
-    public void setApplicationModel(ApplicationModel applicationModel) {
-        this.applicationModel = applicationModel;
-    }
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
@@ -96,7 +80,7 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
             this.protocolName = invoker.getUrl().getParameter(METRICS_PROTOCOL) == null ?
                     DEFAULT_PROTOCOL : invoker.getUrl().getParameter(METRICS_PROTOCOL);
 
-            Protocol protocol = extensionAccessor.getExtensionLoader(Protocol.class).getExtension(protocolName);
+            Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(protocolName);
 
             this.port = invoker.getUrl().getParameter(METRICS_PORT) == null ?
                     protocol.getDefaultPort() : Integer.valueOf(invoker.getUrl().getParameter(METRICS_PORT));
@@ -169,7 +153,7 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
             method = new MetricName(DUBBO_PROVIDER_METHOD, new HashMap<String, String>(4) {
                 {
                     put(SERVICE, serviceName);
-                    put(METHOD_KEY, methodName);
+                    put(METHOD, methodName);
                 }
             }, MetricLevel.NORMAL);
         } else {
@@ -177,7 +161,7 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
             method = new MetricName(DUBBO_CONSUMER_METHOD, new HashMap<String, String>(4) {
                 {
                     put(SERVICE, serviceName);
-                    put(METHOD_KEY, methodName);
+                    put(METHOD, methodName);
                 }
             }, MetricLevel.NORMAL);
         }
@@ -192,7 +176,7 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
     }
 
     private List<MetricObject> getThreadPoolMessage() {
-        DataStore dataStore = extensionAccessor.getExtensionLoader(DataStore.class).getDefaultExtension();
+        DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
         Map<String, Object> executors = dataStore.get(EXECUTOR_SERVICE_COMPONENT_KEY);
 
         List<MetricObject> threadPoolMtricList = new ArrayList<>();
@@ -257,7 +241,7 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
 
             @Override
             public URL getUrl() {
-                return URL.valueOf(protocolName + "://" + NetUtils.getIpByConfig(applicationModel) + ":" + port + "/" + MetricsService.class.getName());
+                return URL.valueOf(protocolName + "://" + NetUtils.getIpByConfig() + ":" + port + "/" + MetricsService.class.getName());
             }
 
             @Override
@@ -272,10 +256,5 @@ public class MetricsFilter implements Filter, ExtensionAccessorAware, ScopeModel
         };
 
         return metricsInvoker;
-    }
-
-    @Override
-    public void setExtensionAccessor(ExtensionAccessor extensionAccessor) {
-        this.extensionAccessor = extensionAccessor;
     }
 }

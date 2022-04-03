@@ -18,20 +18,15 @@ package org.apache.dubbo.registry;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.URLStrParser;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.apache.dubbo.common.constants.RegistryConstants.EMPTY_PROTOCOL;
-import static org.apache.dubbo.common.constants.RegistryConstants.ENABLE_EMPTY_PROTECTION_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CacheableFailbackRegistryTest {
@@ -40,16 +35,12 @@ public class CacheableFailbackRegistryTest {
     static URL serviceUrl;
     static URL registryUrl;
     static String urlStr;
-    static String urlStr2;
-    static String urlStr3;
-
     MockCacheableRegistryImpl registry;
 
     @BeforeAll
     static void setProperty() {
         System.setProperty("dubbo.application.url.cache.task.interval", "0");
         System.setProperty("dubbo.application.url.cache.clear.waiting", "0");
-        FrameworkModel.destroyAll();
     }
 
     @BeforeEach
@@ -58,8 +49,6 @@ public class CacheableFailbackRegistryTest {
         serviceUrl = URL.valueOf("dubbo://127.0.0.1/org.apache.dubbo.test.DemoService?category=providers");
         registryUrl = URL.valueOf("http://1.2.3.4:9090/registry?check=false&file=N/A");
         urlStr = "dubbo%3A%2F%2F172.19.4.113%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fside%3Dprovider%26timeout%3D3000";
-        urlStr2 = "dubbo%3A%2F%2F172.19.4.114%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fside%3Dprovider%26timeout%3D3000";
-        urlStr3 = "dubbo%3A%2F%2F172.19.4.115%3A20880%2Forg.apache.dubbo.demo.DemoService%3Fside%3Dprovider%26timeout%3D3000";
     }
 
     @AfterEach
@@ -75,7 +64,12 @@ public class CacheableFailbackRegistryTest {
         registry = new MockCacheableRegistryImpl(registryUrl);
         URL url = URLStrParser.parseEncodedStr(urlStr);
 
-        NotifyListener listener = urls -> resCount.set(urls.size());
+        NotifyListener listener = new NotifyListener() {
+            @Override
+            public void notify(List<URL> urls) {
+                resCount.set(urls.size());
+            }
+        };
 
         registry.addChildren(url);
         registry.subscribe(serviceUrl, listener);
@@ -106,7 +100,12 @@ public class CacheableFailbackRegistryTest {
         registry = new MockCacheableRegistryImpl(registryUrl);
         URL url = URLStrParser.parseEncodedStr(urlStr);
 
-        NotifyListener listener = urls -> resCount.set(urls.size());
+        NotifyListener listener = new NotifyListener() {
+            @Override
+            public void notify(List<URL> urls) {
+                resCount.set(urls.size());
+            }
+        };
 
         registry.addChildren(url);
         registry.subscribe(serviceUrl, listener);
@@ -132,7 +131,12 @@ public class CacheableFailbackRegistryTest {
         registry = new MockCacheableRegistryImpl(registryUrl);
         URL url = URLStrParser.parseEncodedStr(urlStr);
 
-        NotifyListener listener = urls -> resCount.set(urls.size());
+        NotifyListener listener = new NotifyListener() {
+            @Override
+            public void notify(List<URL> urls) {
+                resCount.set(urls.size());
+            }
+        };
 
         registry.addChildren(url);
         registry.subscribe(serviceUrl, listener);
@@ -153,12 +157,17 @@ public class CacheableFailbackRegistryTest {
     }
 
     @Test
-    public void testRemove() {
+    public void testRemove() throws Exception {
         final AtomicReference<Integer> resCount = new AtomicReference<>(0);
         registry = new MockCacheableRegistryImpl(registryUrl);
         URL url = URLStrParser.parseEncodedStr(urlStr);
 
-        NotifyListener listener = urls -> resCount.set(urls.size());
+        NotifyListener listener = new NotifyListener() {
+            @Override
+            public void notify(List<URL> urls) {
+                resCount.set(urls.size());
+            }
+        };
 
         registry.addChildren(url);
         registry.subscribe(serviceUrl, listener);
@@ -191,54 +200,5 @@ public class CacheableFailbackRegistryTest {
         // StringParam will be deleted because the related stringUrls cache has been deleted.
         assertEquals(0, registry.getStringParam().size());
     }
-
-    @Test
-    public void testEmptyProtection() {
-        final AtomicReference<Integer> resCount = new AtomicReference<>(0);
-        final AtomicReference<List<URL>> currentUrls = new AtomicReference<>();
-        final List<URL> EMPTY_LIST = new ArrayList<>();
-
-        registry = new MockCacheableRegistryImpl(registryUrl);
-        URL url = URLStrParser.parseEncodedStr(urlStr);
-        URL url2 = URLStrParser.parseEncodedStr(urlStr2);
-        URL url3 = URLStrParser.parseEncodedStr(urlStr3);
-
-        NotifyListener listener = urls -> {
-            if (CollectionUtils.isEmpty(urls)) {
-                // do nothing
-            } else if (urls.size() == 1 && urls.get(0).getProtocol().equals(EMPTY_PROTOCOL)) {
-                resCount.set(0);
-                currentUrls.set(EMPTY_LIST);
-            } else {
-                resCount.set(urls.size());
-                currentUrls.set(urls);
-            }
-        };
-
-        registry.addChildren(url);
-        registry.addChildren(url2);
-        registry.addChildren(url3);
-
-        registry.subscribe(serviceUrl, listener);
-        assertEquals(3, resCount.get());
-        registry.removeChildren(url);
-        assertEquals(2, resCount.get());
-        registry.clearChildren();
-        assertEquals(2, resCount.get());
-
-        URL emptyRegistryURL = registryUrl.addParameter(ENABLE_EMPTY_PROTECTION_KEY, false);
-        MockCacheableRegistryImpl emptyRegistry = new MockCacheableRegistryImpl(emptyRegistryURL);
-
-        emptyRegistry.addChildren(url);
-        emptyRegistry.addChildren(url2);
-
-        emptyRegistry.subscribe(serviceUrl, listener);
-        assertEquals(2, resCount.get());
-        emptyRegistry.clearChildren();
-        assertEquals(0, currentUrls.get().size());
-        assertEquals(EMPTY_LIST, currentUrls.get());
-
-    }
-
 
 }

@@ -20,11 +20,9 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.NetUtils;
 import org.apache.dubbo.registry.NotifyListener;
 import org.apache.dubbo.registry.Registry;
-import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.registry.RegistryFactory;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -35,60 +33,49 @@ import java.util.List;
  */
 public class AbstractRegistryFactoryTest {
 
-    private AbstractRegistryFactory registryFactory;
+    private RegistryFactory registryFactory = new AbstractRegistryFactory() {
 
-    @BeforeEach
-    public void setup() {
-        registryFactory = new AbstractRegistryFactory() {
+        @Override
+        protected Registry createRegistry(final URL url) {
+            return new Registry() {
 
-            @Override
-            protected Registry createRegistry(final URL url) {
-                return new Registry() {
+                public URL getUrl() {
+                    return url;
+                }
 
-                    public URL getUrl() {
-                        return url;
-                    }
+                @Override
+                public boolean isAvailable() {
+                    return false;
+                }
 
-                    @Override
-                    public boolean isAvailable() {
-                        return false;
-                    }
+                @Override
+                public void destroy() {
+                }
 
-                    @Override
-                    public void destroy() {
-                    }
+                @Override
+                public void register(URL url) {
+                }
 
-                    @Override
-                    public void register(URL url) {
-                    }
+                @Override
+                public void unregister(URL url) {
+                }
 
-                    @Override
-                    public void unregister(URL url) {
-                    }
+                @Override
+                public void subscribe(URL url, NotifyListener listener) {
+                }
 
-                    @Override
-                    public void subscribe(URL url, NotifyListener listener) {
-                    }
+                @Override
+                public void unsubscribe(URL url, NotifyListener listener) {
+                }
 
-                    @Override
-                    public void unsubscribe(URL url, NotifyListener listener) {
-                    }
+                @Override
+                public List<URL> lookup(URL url) {
+                    return null;
+                }
 
-                    @Override
-                    public List<URL> lookup(URL url) {
-                        return null;
-                    }
-
-                };
-            }
-        };
-        registryFactory.setApplicationModel(ApplicationModel.defaultModel());
-    }
-
-    @AfterEach
-    public void teardown() {
-        ApplicationModel.defaultModel().destroy();
-    }
+            };
+        }
+    };
 
     @Test
     public void testRegistryFactoryCache() throws Exception {
@@ -125,17 +112,14 @@ public class AbstractRegistryFactoryTest {
                 return true;
             }
         };
-
-        RegistryManager registryManager = ApplicationModel.defaultModel().getBeanFactory().getBean(RegistryManager.class);
-
-        Collection<Registry> registries = registryManager.getRegistries();
+        Collection<Registry> registries = AbstractRegistryFactory.getRegistries();
         Assertions.assertTrue(registries.contains(registry1));
         Assertions.assertTrue(registries.contains(registry2));
         registry3.destroy();
-        registries = registryManager.getRegistries();
+        registries = AbstractRegistryFactory.getRegistries();
         Assertions.assertFalse(registries.contains(registry3));
-        registryManager.destroyAll();
-        registries = registryManager.getRegistries();
+        AbstractRegistryFactory.destroyAll();
+        registries = AbstractRegistryFactory.getRegistries();
         Assertions.assertFalse(registries.contains(registry1));
         Assertions.assertFalse(registries.contains(registry2));
     }

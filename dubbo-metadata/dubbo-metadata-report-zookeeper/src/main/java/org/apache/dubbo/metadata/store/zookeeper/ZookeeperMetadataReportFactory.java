@@ -21,7 +21,6 @@ import org.apache.dubbo.common.extension.DisableInject;
 import org.apache.dubbo.metadata.report.MetadataReport;
 import org.apache.dubbo.metadata.report.support.AbstractMetadataReportFactory;
 import org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 /**
  * ZookeeperRegistryFactory.
@@ -30,11 +29,8 @@ public class ZookeeperMetadataReportFactory extends AbstractMetadataReportFactor
 
     private ZookeeperTransporter zookeeperTransporter;
 
-    private ApplicationModel applicationModel;
-
-    public ZookeeperMetadataReportFactory(ApplicationModel applicationModel) {
-        this.applicationModel = applicationModel;
-        this.zookeeperTransporter = ZookeeperTransporter.getExtension(applicationModel);
+    public ZookeeperMetadataReportFactory() {
+        this.zookeeperTransporter = ZookeeperTransporter.getExtension();
     }
 
     @DisableInject

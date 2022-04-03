@@ -19,10 +19,10 @@ package org.apache.dubbo.config.spring.boot.conditional4;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
 import org.apache.dubbo.config.spring.ReferenceBean;
+import org.apache.dubbo.config.spring.ZooKeeperServer;
 import org.apache.dubbo.config.spring.api.HelloService;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.apache.dubbo.config.spring.context.annotation.provider.HelloServiceImpl;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,12 +56,13 @@ import java.util.Map;
 public class JavaConfigReferenceBeanConditionalTest4 {
 
     @BeforeAll
-    public static void beforeAll(){
+    public static void setUp(){
+        ZooKeeperServer.start();
         DubboBootstrap.reset();
     }
 
     @AfterAll
-    public static void afterAll(){
+    public static void tearDown(){
         DubboBootstrap.reset();
     }
 

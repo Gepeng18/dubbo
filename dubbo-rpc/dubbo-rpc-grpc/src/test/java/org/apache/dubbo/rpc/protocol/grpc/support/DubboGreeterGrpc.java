@@ -22,11 +22,11 @@ import org.apache.dubbo.config.ReferenceConfigBase;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.dubbo.rpc.protocol.grpc.support.GreeterGrpc.getServiceDescriptor;
 import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_TIMEOUT;
 import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
-import static org.apache.dubbo.rpc.protocol.grpc.support.GreeterGrpc.getServiceDescriptor;
 
 @javax.annotation.Generated(
     value = "by DubboGrpc generator",
@@ -44,8 +44,7 @@ public final class DubboGreeterGrpc {
         protected GreeterGrpc.GreeterFutureStub futureStub;
         protected GreeterGrpc.GreeterStub stub;
 
-        public DubboGreeterStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions, URL url,
-                                ReferenceConfigBase<?> referenceConfig) {
+        public DubboGreeterStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions, URL url, ReferenceConfigBase<?> referenceConfig) {
             this.url = url;
             this.referenceConfig = referenceConfig;
 

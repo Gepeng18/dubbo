@@ -19,7 +19,6 @@ package org.apache.dubbo.registry.client;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.extension.SPI;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
 
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_CLUSTER_TYPE_KEY;
 
@@ -31,7 +30,7 @@ public interface RegistryClusterIdentifier {
 
     static RegistryClusterIdentifier getExtension(URL url) {
         ExtensionLoader<RegistryClusterIdentifier> loader
-                = ScopeModelUtil.getExtensionLoader(RegistryClusterIdentifier.class, url.getScopeModel());
+                = ExtensionLoader.getExtensionLoader(RegistryClusterIdentifier.class);
         return loader.getExtension(url.getParameter(REGISTRY_CLUSTER_TYPE_KEY, "default"));
     }
 }

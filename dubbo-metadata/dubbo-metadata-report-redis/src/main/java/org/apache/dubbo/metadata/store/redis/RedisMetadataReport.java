@@ -55,9 +55,8 @@ public class RedisMetadataReport extends AbstractMetadataReport {
     private final static String REDIS_DATABASE_KEY = "database";
     private final static Logger logger = LoggerFactory.getLogger(RedisMetadataReport.class);
 
-    // protected , for test
-    protected JedisPool pool;
-    private Set<HostAndPort> jedisClusterNodes;
+    JedisPool pool;
+    Set<HostAndPort> jedisClusterNodes;
     private int timeout;
     private String password;
 

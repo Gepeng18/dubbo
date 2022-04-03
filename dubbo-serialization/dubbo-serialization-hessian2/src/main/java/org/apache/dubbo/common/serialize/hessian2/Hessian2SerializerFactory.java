@@ -23,4 +23,9 @@ public class Hessian2SerializerFactory extends SerializerFactory {
     public Hessian2SerializerFactory() {
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
 }

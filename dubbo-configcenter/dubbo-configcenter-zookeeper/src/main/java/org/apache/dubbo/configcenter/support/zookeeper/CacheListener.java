@@ -32,6 +32,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import static org.apache.dubbo.common.constants.CommonConstants.DOT_SEPARATOR;
 import static org.apache.dubbo.common.constants.CommonConstants.PATH_SEPARATOR;
 
+/**
+ *
+ */
+
 public class CacheListener implements DataListener {
 
     private Map<String, Set<ConfigurationListener>> keyListeners = new ConcurrentHashMap<>();
@@ -90,9 +94,7 @@ public class CacheListener implements DataListener {
     @Override
     public void dataChanged(String path, Object value, EventType eventType) {
         ConfigChangeType changeType;
-        if (EventType.NodeCreated.equals(eventType)) {
-            changeType = ConfigChangeType.ADDED;
-        } else if (value == null) {
+        if (value == null) {
             changeType = ConfigChangeType.DELETED;
         } else {
             changeType = ConfigChangeType.MODIFIED;

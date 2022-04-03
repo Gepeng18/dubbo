@@ -75,7 +75,6 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
             invoked.add(invoker);
             RpcContext.getServiceContext().setInvokers((List) invoked);
-            boolean success = false;
             try {
                 Result result = invokeWithContext(invoker, invocation);
                 if (le != null && logger.isWarnEnabled()) {
@@ -89,7 +88,6 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
                             + " using the dubbo version " + Version.getVersion() + ". Last error is: "
                             + le.getMessage(), le);
                 }
-                success = true;
                 return result;
             } catch (RpcException e) {
                 if (e.isBiz()) { // biz exception.
@@ -99,9 +97,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             } catch (Throwable e) {
                 le = new RpcException(e.getMessage(), e);
             } finally {
-                if (!success) {
-                    providers.add(invoker.getUrl().getAddress());
-                }
+                providers.add(invoker.getUrl().getAddress());
             }
         }
         throw new RpcException(le.getCode(), "Failed to invoke the method "

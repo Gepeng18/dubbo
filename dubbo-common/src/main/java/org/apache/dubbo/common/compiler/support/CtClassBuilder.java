@@ -16,8 +16,6 @@
  */
 package org.apache.dubbo.common.compiler.support;
 
-import org.apache.dubbo.common.bytecode.DubboLoaderClassPath;
-
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -142,8 +140,7 @@ public class CtClassBuilder {
      */
     public CtClass build(ClassLoader classLoader) throws NotFoundException, CannotCompileException {
         ClassPool pool = new ClassPool(true);
-        pool.insertClassPath(new LoaderClassPath(classLoader));
-        pool.insertClassPath(new DubboLoaderClassPath());
+        pool.appendClassPath(new LoaderClassPath(classLoader));
         
         // create class
         CtClass ctClass = pool.makeClass(className, pool.get(superClassName));

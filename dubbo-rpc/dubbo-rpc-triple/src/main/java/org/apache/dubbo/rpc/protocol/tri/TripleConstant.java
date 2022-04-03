@@ -14,28 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.dubbo.rpc.protocol.tri;
 
-import io.netty.util.AsciiString;
-
-public class TripleConstant {
-
-    public static final String CONTENT_PROTO = "application/grpc+proto";
-    public static final String APPLICATION_GRPC = "application/grpc";
-    public static final String TEXT_PLAIN_UTF8 = "text/plain; encoding=utf-8";
-    public static final String TRI_VERSION = "3.0-TRI";
-
-    public static final String SERIALIZATION_KEY = "serialization";
-    public static final String TE_KEY = "te";
-
-    public static final String HESSIAN4 = "hessian4";
-    public static final String HESSIAN2 = "hessian2";
-
-    public static final String HEADER_BIN_SUFFIX = "-bin";
-
-    public static final AsciiString HTTPS_SCHEME = AsciiString.of("https");
-    public static final AsciiString HTTP_SCHEME = AsciiString.of("http");
-
+public interface TripleConstant {
+    String AUTHORITY_KEY = ":authority";
+    String PATH_KEY = ":path";
+    String HTTP_STATUS_KEY = "http-status";
+    String STATUS_KEY = "grpc-status";
+    String MESSAGE_KEY = "grpc-message";
+    String TIMEOUT = "grpc-timeout";
+    String CONTENT_TYPE_KEY = "content-type";
+    String CONTENT_PROTO = "application/grpc+proto";
+    String APPLICATION_GRPC = "application/grpc";
+    String TRICE_ID_KEY = "tri-trace-traceid";
+    String RPC_ID_KEY = "tri-trace-rpcid";
+    String CONSUMER_APP_NAME_KEY = "tri-consumer-appname";
+    String UNIT_INFO_KEY = "tri-unit-info";
+    String SERVICE_VERSION = "tri-service-version";
+    String SERVICE_GROUP = "tri-service-group";
+    String TRI_VERSION = "1.0.0";
 
 }

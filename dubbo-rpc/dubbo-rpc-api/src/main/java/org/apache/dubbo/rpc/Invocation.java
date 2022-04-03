@@ -17,9 +17,6 @@
 package org.apache.dubbo.rpc;
 
 import org.apache.dubbo.common.Experimental;
-import org.apache.dubbo.rpc.model.ModuleModel;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
-import org.apache.dubbo.rpc.model.ServiceModel;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -48,7 +45,6 @@ public interface Invocation {
 
     /**
      * get the interface name
-     *
      * @return
      */
     String getServiceName();
@@ -68,8 +64,8 @@ public interface Invocation {
      */
     default String[] getCompatibleParamSignatures() {
         return Stream.of(getParameterTypes())
-            .map(Class::getName)
-            .toArray(String[]::new);
+                .map(Class::getName)
+                .toArray(String[]::new);
     }
 
     /**
@@ -141,14 +137,6 @@ public interface Invocation {
      * @transient
      */
     Invoker<?> getInvoker();
-
-    void setServiceModel(ServiceModel serviceModel);
-
-    ServiceModel getServiceModel();
-
-    default ModuleModel getModuleModel() {
-        return ScopeModelUtil.getModuleModel(getServiceModel() == null ? null : getServiceModel().getModuleModel());
-    }
 
     Object put(Object key, Object value);
 

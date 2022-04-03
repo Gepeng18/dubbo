@@ -17,7 +17,6 @@
 package org.apache.dubbo.qos.protocol;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.UrlUtils;
@@ -28,8 +27,6 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Protocol;
 import org.apache.dubbo.rpc.ProtocolServer;
 import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.model.FrameworkModel;
-import org.apache.dubbo.rpc.model.ScopeModelAware;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,27 +36,20 @@ import static org.apache.dubbo.common.constants.QosConstants.QOS_ENABLE;
 import static org.apache.dubbo.common.constants.QosConstants.QOS_HOST;
 import static org.apache.dubbo.common.constants.QosConstants.QOS_PORT;
 
-@Activate(order = 200)
-public class QosProtocolWrapper implements Protocol, ScopeModelAware {
+
+public class QosProtocolWrapper implements Protocol {
 
     private final Logger logger = LoggerFactory.getLogger(QosProtocolWrapper.class);
 
-    private AtomicBoolean hasStarted = new AtomicBoolean(false);
+    private static AtomicBoolean hasStarted = new AtomicBoolean(false);
 
     private Protocol protocol;
-
-    private FrameworkModel frameworkModel;
 
     public QosProtocolWrapper(Protocol protocol) {
         if (protocol == null) {
             throw new IllegalArgumentException("protocol == null");
         }
         this.protocol = protocol;
-    }
-
-    @Override
-    public void setFrameworkModel(FrameworkModel frameworkModel) {
-        this.frameworkModel = frameworkModel;
     }
 
     @Override
@@ -113,7 +103,7 @@ public class QosProtocolWrapper implements Protocol, ScopeModelAware {
             String host = url.getParameter(QOS_HOST);
             int port = url.getParameter(QOS_PORT, QosConstants.DEFAULT_PORT);
             boolean acceptForeignIp = Boolean.parseBoolean(url.getParameter(ACCEPT_FOREIGN_IP, "false"));
-            Server server = frameworkModel.getBeanFactory().getBean(Server.class);
+            Server server = Server.getInstance();
             server.setHost(host);
             server.setPort(port);
             server.setAcceptForeignIp(acceptForeignIp);
@@ -126,7 +116,7 @@ public class QosProtocolWrapper implements Protocol, ScopeModelAware {
 
     /*package*/ void stopServer() {
         if (hasStarted.compareAndSet(true, false)) {
-            Server server = frameworkModel.getBeanFactory().getBean(Server.class);
+            Server server = Server.getInstance();
             server.stop();
         }
     }

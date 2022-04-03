@@ -16,8 +16,8 @@
  */
 package org.apache.dubbo.qos.command.util;
 
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.qos.command.BaseCommand;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,17 +25,14 @@ import java.util.Set;
 
 public class CommandHelper {
 
-    private FrameworkModel frameworkModel;
-
-    public CommandHelper(FrameworkModel frameworkModel) {
-        this.frameworkModel = frameworkModel;
+    private CommandHelper() {
     }
 
-    public boolean hasCommand(String commandName) {
+    public static boolean hasCommand(String commandName) {
 
-        BaseCommand command;
+        BaseCommand command = null;
         try {
-            command = frameworkModel.getExtensionLoader(BaseCommand.class).getExtension(commandName);
+            command = ExtensionLoader.getExtensionLoader(BaseCommand.class).getExtension(commandName);
         } catch (Throwable throwable) {
             return false;
         }
@@ -44,12 +41,12 @@ public class CommandHelper {
 
     }
 
-    public List<Class<?>> getAllCommandClass() {
-        final Set<String> commandList = frameworkModel.getExtensionLoader(BaseCommand.class).getSupportedExtensions();
+    public static List<Class<?>> getAllCommandClass() {
+        final Set<String> commandList = ExtensionLoader.getExtensionLoader(BaseCommand.class).getSupportedExtensions();
         final List<Class<?>> classes = new ArrayList<Class<?>>();
 
         for (String commandName : commandList) {
-            BaseCommand command = frameworkModel.getExtensionLoader(BaseCommand.class).getExtension(commandName);
+            BaseCommand command = ExtensionLoader.getExtensionLoader(BaseCommand.class).getExtension(commandName);
             classes.add(command.getClass());
         }
 
@@ -57,9 +54,9 @@ public class CommandHelper {
     }
 
 
-    public Class<?> getCommandClass(String commandName) {
+    public static Class<?> getCommandClass(String commandName) {
         if (hasCommand(commandName)) {
-            return frameworkModel.getExtensionLoader(BaseCommand.class).getExtension(commandName).getClass();
+            return ExtensionLoader.getExtensionLoader(BaseCommand.class).getExtension(commandName).getClass();
         } else {
             return null;
         }

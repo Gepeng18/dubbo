@@ -23,7 +23,6 @@ import org.apache.dubbo.qos.command.CommandExecutor;
 import org.apache.dubbo.qos.command.DefaultCommandExecutor;
 import org.apache.dubbo.qos.command.NoSuchCommandException;
 import org.apache.dubbo.qos.command.decoder.HttpCommandDecoder;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -51,11 +50,8 @@ import io.netty.handler.codec.http.HttpVersion;
 public class HttpProcessHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     private static final Logger log = LoggerFactory.getLogger(HttpProcessHandler.class);
-    private CommandExecutor commandExecutor;
+    private static CommandExecutor commandExecutor = new DefaultCommandExecutor();
 
-    public HttpProcessHandler(FrameworkModel frameworkModel) {
-        this.commandExecutor = new DefaultCommandExecutor(frameworkModel);
-    }
 
     private static FullHttpResponse http(int httpCode, String result) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(httpCode)
@@ -79,7 +75,7 @@ public class HttpProcessHandler extends SimpleChannelInboundHandler<HttpRequest>
         CommandContext commandContext = HttpCommandDecoder.decode(msg);
         // return 404 when fail to construct command context
         if (commandContext == null) {
-            log.warn("can not found commandContext, url: " + msg.uri());
+            log.warn("can not found commandContext url: " + msg.uri());
             FullHttpResponse response = http404();
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         } else {
@@ -90,7 +86,7 @@ public class HttpProcessHandler extends SimpleChannelInboundHandler<HttpRequest>
                 FullHttpResponse response = http(httpCode, result);
                 ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             } catch (NoSuchCommandException ex) {
-                log.error("can not find command: " + commandContext, ex);
+                log.error("can not find commandContext: " + commandContext, ex);
                 FullHttpResponse response = http404();
                 ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             } catch (Exception qosEx) {

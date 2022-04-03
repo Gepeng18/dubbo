@@ -18,23 +18,15 @@ package org.apache.dubbo.remoting.handler;
 
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionLoader;
-import org.apache.dubbo.common.threadpool.ThreadlessExecutor;
-import org.apache.dubbo.common.threadpool.manager.ExecutorRepository;
 import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.remoting.RemotingException;
-import org.apache.dubbo.remoting.exchange.Request;
-import org.apache.dubbo.remoting.exchange.Response;
-import org.apache.dubbo.remoting.exchange.support.DefaultFuture;
 import org.apache.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
-import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -44,8 +36,7 @@ public class WrappedChannelHandlerTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        url = url.setScopeModel(ApplicationModel.defaultModel());
-        handler = new WrappedChannelHandler(new BizChannelHandler(true), url);
+        handler = new WrappedChannelHandler(new BizChannelHander(true), url);
     }
 
     @Test
@@ -88,22 +79,22 @@ public class WrappedChannelHandlerTest {
     }
 
     @Test
-    public void testConnectBizError() throws RemotingException {
+    public void test_Connect_Biz_Error() throws RemotingException {
         Assertions.assertThrows(RemotingException.class, () -> handler.connected(new MockedChannel()));
     }
 
     @Test
-    public void testDisconnectBizError() throws RemotingException {
+    public void test_Disconnect_Biz_Error() throws RemotingException {
         Assertions.assertThrows(RemotingException.class, () -> handler.disconnected(new MockedChannel()));
     }
 
     @Test
-    public void testMessageReceivedBizError() throws RemotingException {
+    public void test_MessageReceived_Biz_Error() throws RemotingException {
         Assertions.assertThrows(RemotingException.class, () -> handler.received(new MockedChannel(), ""));
     }
 
     @Test
-    public void testCaughtBizError() throws RemotingException {
+    public void test_Caught_Biz_Error() throws RemotingException {
         try {
             handler.caught(new MockedChannel(), new BizException());
             fail();
@@ -112,43 +103,15 @@ public class WrappedChannelHandlerTest {
         }
     }
 
-    @Test
-    public void testGetExecutor() {
-        ExecutorService sharedExecutorService = handler.getSharedExecutorService();
-        Assertions.assertNotNull(sharedExecutorService);
-        ExecutorService preferredExecutorService = handler.getPreferredExecutorService(new Object());
-        Assertions.assertEquals(preferredExecutorService, sharedExecutorService);
-
-        Response response = new Response(10);
-        preferredExecutorService = handler.getPreferredExecutorService(response);
-        Assertions.assertEquals(preferredExecutorService, sharedExecutorService);
-
-        Channel channel = new MockedChannel();
-        Request request = new Request(10);
-        ExecutorService sharedExecutor = ExtensionLoader.getExtensionLoader(ExecutorRepository.class)
-            .getDefaultExtension().createExecutorIfAbsent(url);
-
-        DefaultFuture future = DefaultFuture.newFuture(channel, request, 1000, null);
-        preferredExecutorService = handler.getPreferredExecutorService(response);
-        Assertions.assertEquals(preferredExecutorService, sharedExecutor);
-        future.cancel();
-
-        ThreadlessExecutor executor = new ThreadlessExecutor();
-        future = DefaultFuture.newFuture(channel, request, 1000, executor);
-        preferredExecutorService = handler.getPreferredExecutorService(response);
-        Assertions.assertEquals(preferredExecutorService, executor);
-        future.cancel();
-    }
-
-    class BizChannelHandler extends MockedChannelHandler {
+    class BizChannelHander extends MockedChannelHandler {
         private boolean invokeWithBizError;
 
-        public BizChannelHandler(boolean invokeWithBizError) {
+        public BizChannelHander(boolean invokeWithBizError) {
             super();
             this.invokeWithBizError = invokeWithBizError;
         }
 
-        public BizChannelHandler() {
+        public BizChannelHander() {
             super();
         }
 

@@ -185,7 +185,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                 logger.error(e.getMessage(), e);
             } else {
                 String echo = handler.telnet(channel, (String) message);
-                if (StringUtils.isNotEmpty(echo)) {
+                if (echo != null && echo.length() > 0) {
                     channel.send(echo);
                 }
             }

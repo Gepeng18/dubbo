@@ -49,11 +49,16 @@ public interface Constants {
     String CHANNEL_CALLBACK_KEY = "channel.callback.invokers.key";
 
     /**
-     * when this warning rises from invocation, program probably have a bug.
+     * The initial state for lazy connection
      */
-    String LAZY_REQUEST_WITH_WARNING_KEY = "lazyclient_request_with_warning";
+    String LAZY_CONNECT_INITIAL_STATE_KEY = "connect.lazy.initial.state";
 
-    boolean DEFAULT_LAZY_REQUEST_WITH_WARNING = false;
+    /**
+     * The default value of lazy connection's initial state: true
+     *
+     * @see #LAZY_CONNECT_INITIAL_STATE_KEY
+     */
+    boolean DEFAULT_LAZY_CONNECT_INITIAL_STATE = true;
 
     String OPTIMIZER_KEY = "optimizer";
 

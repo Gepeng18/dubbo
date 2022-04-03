@@ -31,7 +31,6 @@ import org.apache.dubbo.config.spring.ConfigCenterBean;
 import org.apache.dubbo.config.spring.ReferenceBean;
 import org.apache.dubbo.config.spring.ServiceBean;
 import org.apache.dubbo.config.spring.beans.factory.config.ConfigurableSourceBeanMetadataElement;
-import org.apache.dubbo.config.spring.context.DubboSpringInitializer;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -39,6 +38,8 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.context.annotation.AnnotationConfigUtils;
 import org.w3c.dom.Element;
+
+import static org.apache.dubbo.config.spring.util.DubboBeanUtils.registerCommonBeans;
 
 /**
  * DubboNamespaceHandler
@@ -51,8 +52,12 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
         Version.checkDuplicate(DubboNamespaceHandler.class);
     }
 
+    /**
+     *   这里是DubboNamespaceHandler的核心方法，启动流程所需内容都在这里
+     */
     @Override
     public void init() {
+        // 从这里开始是一系列初始化，在Dubbo的配置文件中配置的几乎所有内容都是在这里进行读取和初始化的
         registerBeanDefinitionParser("application", new DubboBeanDefinitionParser(ApplicationConfig.class));
         registerBeanDefinitionParser("module", new DubboBeanDefinitionParser(ModuleConfig.class));
         registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class));
@@ -64,8 +69,13 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
         registerBeanDefinitionParser("provider", new DubboBeanDefinitionParser(ProviderConfig.class));
         registerBeanDefinitionParser("consumer", new DubboBeanDefinitionParser(ConsumerConfig.class));
         registerBeanDefinitionParser("protocol", new DubboBeanDefinitionParser(ProtocolConfig.class));
+
+        // 当所有内容都初始化完成以后，就要开始进行启动的准备工作了
+        // ServiceBean主要是针对provider端的，<dubbo:service... 开头的内容都是由这里进行处理的
         registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class));
+        // ReferenceBean主要是针对consumer端的，<dubbo:reference... 开头的内容都是由这里进行处理的
         registerBeanDefinitionParser("reference", new DubboBeanDefinitionParser(ReferenceBean.class));
+        // 这里是进行全注解的处理的
         registerBeanDefinitionParser("annotation", new AnnotationBeanDefinitionParser());
     }
 
@@ -81,10 +91,11 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
     public BeanDefinition parse(Element element, ParserContext parserContext) {
         BeanDefinitionRegistry registry = parserContext.getRegistry();
         registerAnnotationConfigProcessors(registry);
-
-        // initialize dubbo beans
-        DubboSpringInitializer.initialize(parserContext.getRegistry());
-
+        /**
+         * @since 2.7.8
+         * issue : https://github.com/apache/dubbo/issues/6275
+         */
+        registerCommonBeans(registry);
         BeanDefinition beanDefinition = super.parse(element, parserContext);
         setSource(beanDefinition);
         return beanDefinition;

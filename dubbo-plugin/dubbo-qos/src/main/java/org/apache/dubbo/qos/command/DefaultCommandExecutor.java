@@ -16,20 +16,14 @@
  */
 package org.apache.dubbo.qos.command;
 
-import org.apache.dubbo.rpc.model.FrameworkModel;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 
 public class DefaultCommandExecutor implements CommandExecutor {
-    private FrameworkModel frameworkModel;
-
-    public DefaultCommandExecutor(FrameworkModel frameworkModel) {
-        this.frameworkModel = frameworkModel;
-    }
-
     @Override
     public String execute(CommandContext commandContext) throws NoSuchCommandException {
         BaseCommand command = null;
         try {
-            command = frameworkModel.getExtensionLoader(BaseCommand.class).getExtension(commandContext.getCommandName());
+            command = ExtensionLoader.getExtensionLoader(BaseCommand.class).getExtension(commandContext.getCommandName());
         } catch (Throwable throwable) {
                 //can't find command
         }

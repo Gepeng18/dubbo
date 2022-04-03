@@ -142,8 +142,8 @@ public class HeaderExchangeChannelTest {
     public void requestTest01() throws RemotingException {
         Assertions.assertThrows(RemotingException.class, () -> {
             header.close(1000);
-            Object requestObject = new Object();
-            header.request(requestObject);
+            Object requestob = new Object();
+            header.request(requestob);
         });
     }
 
@@ -152,11 +152,11 @@ public class HeaderExchangeChannelTest {
         Channel channel = Mockito.mock(MockChannel.class);
         header = new HeaderExchangeChannel(channel);
         when(channel.getUrl()).thenReturn(url);
-        Object requestObject = new Object();
-        header.request(requestObject);
+        Object requestob = new Object();
+        header.request(requestob);
         ArgumentCaptor<Request> argumentCaptor = ArgumentCaptor.forClass(Request.class);
         verify(channel, times(1)).send(argumentCaptor.capture());
-        Assertions.assertEquals(argumentCaptor.getValue().getData(), requestObject);
+        Assertions.assertEquals(argumentCaptor.getValue().getData(), requestob);
     }
 
     @Test
@@ -169,8 +169,8 @@ public class HeaderExchangeChannelTest {
                 }
             };
             header = new HeaderExchangeChannel(channel);
-            Object requestObject = new Object();
-            header.request(requestObject, 1000);
+            Object requestob = new Object();
+            header.request(requestob, 1000);
         });
     }
 
