@@ -58,6 +58,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
             }
         }
 
+        // dubbo高级用法之 泛化调用 https://dubbo.apache.org/zh/docs/advanced/generic-reference/
         if (generic) {
             if (GenericService.class.equals(invoker.getInterface()) || !GenericService.class.isAssignableFrom(invoker.getInterface())) {
                 interfaces.add(com.alibaba.dubbo.rpc.service.GenericService.class);
@@ -75,6 +76,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
         interfaces.add(invoker.getInterface());
         interfaces.addAll(Arrays.asList(INTERNAL_INTERFACES));
 
+        // 真正生成代理对象
         return getProxy(invoker, interfaces.toArray(new Class<?>[0]));
     }
 

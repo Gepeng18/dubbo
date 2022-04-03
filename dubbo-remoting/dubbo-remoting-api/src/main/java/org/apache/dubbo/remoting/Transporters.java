@@ -53,6 +53,8 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // getTransporter()返回 org.apache.dubbo.remoting.transport.netty4.NettyTransporter
+        // 这时候provider的服务(netty已经启动了)
         return getTransporter().bind(url, handler);
     }
 

@@ -68,6 +68,7 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
 
     @Override
     public Result doInvoke(Invocation invocation) throws Throwable {
+        // 从exporter内存中获取对应的exporter
         Exporter<?> exporter = InjvmProtocol.getExporter(exporterMap, getUrl());
         if (exporter == null) {
             throw new RpcException("Service [" + key + "] not found.");
@@ -97,6 +98,7 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
             result.setExecutor(executor);
             return result;
         } else {
+            // 真实调用了接口的实现 or proxy
             return exporter.getInvoker().invoke(invocation);
         }
     }

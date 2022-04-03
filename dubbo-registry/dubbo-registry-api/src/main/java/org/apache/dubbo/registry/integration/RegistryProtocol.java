@@ -192,8 +192,8 @@ public class RegistryProtocol implements Protocol {
             registered));
     }
 
-    /*
-        服务注册的起点
+    /**
+     * 服务注册的起点
      */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
@@ -269,8 +269,12 @@ public class RegistryProtocol implements Protocol {
         return serviceConfigurationListener.overrideUrl(providerUrl);
     }
 
+    /**
+     * 本地服务启动的起点
+     */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
+        // 1、其实为了保证不重复暴露，每个invoker都有一个key[接口全类名+port](为了缓存,缓存在bounds中)
         String key = getCacheKey(originInvoker);
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {

@@ -278,12 +278,15 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // dubbo://localhost:20880/xxx
         URL url = invoker.getUrl();
 
         // export service.
-        String key = serviceKey(url);
+        // 将export装入缓存
+        String key = serviceKey(url);  // key = 接口全类名+端口号
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
         exporterMap.put(key, exporter);
 
@@ -309,6 +312,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     private void openServer(URL url) {
         // find server.
+        // 获取公网ip
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
@@ -318,6 +322,7 @@ public class DubboProtocol extends AbstractProtocol {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        // 创建server
                         serverMap.put(key, createServer(url));
                     }
                 }
@@ -344,6 +349,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeServer server;
         try {
+            // 启动服务
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);

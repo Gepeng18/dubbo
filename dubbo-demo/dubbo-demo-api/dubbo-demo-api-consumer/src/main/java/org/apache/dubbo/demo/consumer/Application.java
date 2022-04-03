@@ -66,6 +66,7 @@ public class Application {
         reference.setRegistry(new RegistryConfig("zookeeper://127.0.0.1:2181"));
         reference.setMetadataReportConfig(new MetadataReportConfig("zookeeper://127.0.0.1:2181"));
         reference.setInterface(DemoService.class);
+        // 创建consumer
         DemoService service = reference.get();
         String message = service.sayHello("dubbo");
         System.out.println(message);

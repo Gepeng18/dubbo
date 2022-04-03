@@ -32,6 +32,7 @@ public class UrlUtils {
     }
 
     public static int getHeartbeat(URL url) {
+        // 默认60s
         return url.getParameter(Constants.HEARTBEAT_KEY, Constants.DEFAULT_HEARTBEAT);
     }
 }

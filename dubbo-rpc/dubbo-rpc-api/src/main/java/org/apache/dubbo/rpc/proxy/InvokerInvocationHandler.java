@@ -61,6 +61,9 @@ public class InvokerInvocationHandler implements InvocationHandler {
         }
     }
 
+    /**
+     * 真正的调用逻辑
+     */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (method.getDeclaringClass() == Object.class) {
@@ -92,6 +95,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
 
+        // org.apache.dubbo.rpc.protocol.AbstractInvoker.invoke
         return invoker.invoke(rpcInvocation).recreate();
     }
 }

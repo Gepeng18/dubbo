@@ -99,7 +99,7 @@ public class NettyServer extends AbstractServer implements RemotingServer {
         boolean keepalive = getUrl().getParameter(KEEP_ALIVE_KEY, Boolean.FALSE);
 
         bootstrap.group(bossGroup, workerGroup)
-                .channel(NettyEventLoopFactory.serverSocketChannelClass())
+                .channel(NettyEventLoopFactory.serverSocketChannelClass()) // 使用epoll 或者 NIO
                 .option(ChannelOption.SO_REUSEADDR, Boolean.TRUE)
                 .childOption(ChannelOption.TCP_NODELAY, Boolean.TRUE)
                 .childOption(ChannelOption.SO_KEEPALIVE, keepalive)
@@ -110,6 +110,7 @@ public class NettyServer extends AbstractServer implements RemotingServer {
                         // FIXME: should we use getTimeout()?
                         int idleTimeout = UrlUtils.getIdleTimeout(getUrl());
                         NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
+                        // ssl 相关
                         if (getUrl().getParameter(SSL_ENABLED_KEY, false)) {
                             ch.pipeline().addLast("negotiation",
                                     SslHandlerInitializer.sslServerHandler(getUrl(), nettyServerHandler));

@@ -338,6 +338,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         checkInvokerAvailable();
     }
 
+    /**
+     * 创建consumer
+     */
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
         if (shouldJvmRefer(map)) {
@@ -347,8 +350,11 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
         } else {
+            // 直连提供者
             urls.clear();
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+                // 按照;进行分割
+                // dubbo://locahost:20880  dubbo://locahost:20881
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -365,6 +371,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                         }
                     }
                 }
+                // 排除injvm 和 直连
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
@@ -388,6 +395,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 }
             }
 
+            // 包含服务订阅和调用远程代理
             if (urls.size() == 1) {
                 /**
                  * 创建代理对象 interface是接口全类名
@@ -431,6 +439,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         MetadataUtils.publishServiceDefinition(consumerURL);
 
         // create service proxy
+        // 默认 JavassistProxyFactory
         return (T) PROXY_FACTORY.getProxy(invoker, ProtocolUtils.isGeneric(generic));
     }
 

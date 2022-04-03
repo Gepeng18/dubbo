@@ -65,6 +65,7 @@ public class HeaderExchangeServer implements ExchangeServer {
     public HeaderExchangeServer(RemotingServer server) {
         Assert.notNull(server, "server == null");
         this.server = server;
+        // 监听server启动状态[配置不能少于12秒]
         startIdleCheckTask(getUrl());
     }
 

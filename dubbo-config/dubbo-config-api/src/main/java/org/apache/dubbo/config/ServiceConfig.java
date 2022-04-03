@@ -209,6 +209,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         serviceMetadata.generateServiceKey();
     }
 
+    /**
+     * 服务暴露的入口
+     */
     public synchronized void export() {
         if (this.shouldExport() && !this.exported) {
             this.init();
@@ -534,17 +537,20 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     }
 
     private void exportUrl(URL url, List<URL> registryURLs) {
+        // @DubboReference(group = "demo", version = "1.2.3", consumer="my-consumer", init=false, scope="local", timeout=100)
         String scope = url.getParameter(SCOPE_KEY);
         // don't export when none is configured
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
 
             // export to local if the config is not remote (export to remote only when config is remote)
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+                // 本地暴露
                 exportLocal(url);
             }
 
             // export to remote if the config is not local (export to local only when config is local)
             if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {
+                // 远程暴露
                 url = exportRemote(url, registryURLs);
                 MetadataUtils.publishServiceDefinition(url);
             }
@@ -607,11 +613,18 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrl(URL url, boolean withMetaData) {
+        // PROXY_FACTORY = JavassistProxyFactory
+        // invoker为接口的代理类
         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, url);
         if (withMetaData) {
             invoker = new DelegateProviderMetaDataInvoker(invoker, this);
         }
+        // 本地：PROTOCOL = injvmProtocol, exporter = InjvmExporter
+        // 远程：PROTOCOL = registryProtocol, exporter = InjvmExporter
+        // 这里不开启端口，不发起远程调用(这里只是把exporter缓存下来)
+        // exporter(invoker(wrapper(impl, maybe impl or proxy)))
         Exporter<?> exporter = PROTOCOL.export(invoker);
+        // 暴露的服务列表
         exporters.add(exporter);
     }
 
@@ -625,6 +638,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 .setHost(LOCALHOST_VALUE)
                 .setPort(0)
                 .build();
+        // local为 inivm://hostname:post/com.jiangzh.course.dubbo.service.HelloServiceAPI?xxx&scope=local
         doExportUrl(local, false);
         logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry url : " + local);
     }

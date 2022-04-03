@@ -230,6 +230,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
     private AsyncRpcResult doInvokeAndReturn(RpcInvocation invocation) {
         AsyncRpcResult asyncResult;
         try {
+            // 本地调用时 org.apache.dubbo.rpc.protocol.injvm.InjvmInvoker.doInvoke
             asyncResult = (AsyncRpcResult) doInvoke(invocation);
         } catch (InvocationTargetException e) {
             Throwable te = e.getTargetException();
