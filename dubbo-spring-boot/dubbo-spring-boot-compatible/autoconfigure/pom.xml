@@ -74,7 +74,7 @@
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
-            <version>${revision}</version>
+            <version>3.0.2</version>
         </dependency>
 
         <!-- Test Dependencies -->
