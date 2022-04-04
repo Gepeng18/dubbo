@@ -37,6 +37,7 @@ public class DirectChannelHandler extends WrappedChannelHandler {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getPreferredExecutorService(message);
+        // 大部分执行走不到这里
         if (executor instanceof ThreadlessExecutor) {
             try {
                 executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));

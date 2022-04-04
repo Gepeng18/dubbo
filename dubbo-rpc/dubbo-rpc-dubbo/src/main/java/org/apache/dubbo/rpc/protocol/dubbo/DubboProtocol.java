@@ -119,6 +119,7 @@ public class DubboProtocol extends AbstractProtocol {
             Invocation inv = (Invocation) message;
             Invoker<?> invoker = getInvoker(channel, inv);
             // need to consider backward-compatibility if it's a callback
+            // 解了个bug，不用看
             if (Boolean.TRUE.toString().equals(inv.getObjectAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
                 boolean hasMethod = false;
@@ -142,6 +143,7 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
             RpcContext.getServiceContext().setRemoteAddress(channel.getRemoteAddress());
+            // 最终调用了 AbstractProxyInvoker(虽然是抽象类，但是这里具体调用的就是抽象类的invoke)
             Result result = invoker.invoke(inv);
             return result.thenApply(Function.identity());
         }

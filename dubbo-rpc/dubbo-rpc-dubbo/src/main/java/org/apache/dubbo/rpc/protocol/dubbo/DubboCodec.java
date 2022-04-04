@@ -69,6 +69,7 @@ public class DubboCodec extends ExchangeCodec {
         byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);
         // get request id.
         long id = Bytes.bytes2long(header, 4);
+        // 根据flag位判断是请求还是响应
         if ((flag & FLAG_REQUEST) == 0) {
             // decode response.
             Response res = new Response(id);
@@ -91,6 +92,7 @@ public class DubboCodec extends ExchangeCodec {
                             data = decodeEventData(channel, in, eventPayload);
                         }
                     } else {
+                        // getRequestData 获取到响应体
                         DecodeableRpcResult result;
                         if (channel.getUrl().getParameter(DECODE_IN_IO_THREAD_KEY, DEFAULT_DECODE_IN_IO_THREAD)) {
                             result = new DecodeableRpcResult(channel, res, is,
@@ -105,6 +107,7 @@ public class DubboCodec extends ExchangeCodec {
                     }
                     res.setResult(data);
                 } else {
+                    // response的状态位如果不是ok，就返回客户端error即可
                     ObjectInput in = CodecSupport.deserialize(channel.getUrl(), is, proto);
                     res.setErrorMessage(in.readUTF());
                 }

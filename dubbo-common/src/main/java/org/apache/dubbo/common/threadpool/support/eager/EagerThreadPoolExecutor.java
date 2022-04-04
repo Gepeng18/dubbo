@@ -31,6 +31,7 @@ public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
 
     /**
      * task count
+     * 任务来了+1，任务执行完成了-1
      */
     private final AtomicInteger submittedTaskCount = new AtomicInteger(0);
 
@@ -65,6 +66,9 @@ public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
         try {
             super.execute(command);
         } catch (RejectedExecutionException rx) {
+            // 这里存在两种情况
+            // 1、和之前线程池一样，核心，最大，队列都满了
+            // 2、TaskQueue中线程数<最大线程数，返回false，导致拒绝了
             // retry to offer the task into queue.
             final TaskQueue queue = (TaskQueue) super.getQueue();
             try {

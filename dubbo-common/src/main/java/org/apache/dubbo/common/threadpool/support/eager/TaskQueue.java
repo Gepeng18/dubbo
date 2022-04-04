@@ -55,11 +55,13 @@ public class TaskQueue<R extends Runnable> extends LinkedBlockingQueue<Runnable>
         }
 
         // return false to let executor create new worker.
+        // 如果当前线程数 < 最大线程数，return false，这里返回false意思是不进队列了，那按照线程池的原则，不进队列了，就创建线程吧
         if (currentPoolThreadSize < executor.getMaximumPoolSize()) {
             return false;
         }
 
         // currentPoolThreadSize >= max
+        // 这里super.offer
         return super.offer(runnable);
     }
 

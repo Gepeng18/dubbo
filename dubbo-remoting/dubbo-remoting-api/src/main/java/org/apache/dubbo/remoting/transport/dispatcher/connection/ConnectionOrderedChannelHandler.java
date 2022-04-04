@@ -57,6 +57,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
         queuewarninglimit = url.getParameter(CONNECT_QUEUE_WARNING_SIZE, DEFAULT_CONNECT_QUEUE_WARNING_SIZE);
     }
 
+    // connect 和 disconnect 使用同一个线程池，里面只有一个线程，顺序执行
     @Override
     public void connected(Channel channel) throws RemotingException {
         try {
@@ -77,6 +78,7 @@ public class ConnectionOrderedChannelHandler extends WrappedChannelHandler {
         }
     }
 
+    // received 和 caught 使用共享线程池
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService executor = getPreferredExecutorService(message);

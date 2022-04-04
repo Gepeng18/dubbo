@@ -301,6 +301,10 @@ public class DefaultExecutorRepository implements ExecutorRepository {
         return SHARED_EXECUTOR;
     }
 
+    /**
+     * 默认使用 <dubbo:protocol name="dubbo" port="12345" threadpool = "fix"/> 中指定的threadpool
+     * 否则使用默认的FixedThreadPool
+     */
     private ExecutorService createExecutor(URL url) {
         return (ExecutorService) ExtensionLoader.getExtensionLoader(ThreadPool.class).getAdaptiveExtension().getExecutor(url);
     }

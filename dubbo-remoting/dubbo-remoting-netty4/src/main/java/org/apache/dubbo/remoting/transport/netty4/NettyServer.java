@@ -76,6 +76,12 @@ public class NettyServer extends AbstractServer implements RemotingServer {
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
         // you can customize name and type of client thread pool by THREAD_NAME_KEY and THREADPOOL_KEY in CommonConstants.
         // the handler will be wrapped: MultiMessageHandler->HeartbeatHandler->handler
+        /**
+         * 1. 叙述dispatcher的作用
+         * 当xml中配置了<dubbo:protocol name= "dubbo" dispatcher="all"/>
+         * 则url为 dubbo://localhost:20880/com.jiangzh.course.xxxAPI?side=consumer&dispatcher=all
+         * 如果没有配置dispatcher，则默认为all(SPI中配置的)
+         */
         super(ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME), ChannelHandlers.wrap(handler, url));
     }
 

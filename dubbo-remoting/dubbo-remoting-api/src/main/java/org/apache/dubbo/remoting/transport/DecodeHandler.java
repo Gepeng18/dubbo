@@ -48,6 +48,7 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
             decode(((Response) message).getResult());
         }
 
+        // 调用 HeaderExchangeHandler
         handler.received(channel, message);
     }
 

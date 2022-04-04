@@ -59,6 +59,7 @@ final public class NettyCodecAdapter {
         return decoder;
     }
 
+    // bean -> byte[]
     private class InternalEncoder extends MessageToByteEncoder {
 
         @Override
@@ -66,10 +67,12 @@ final public class NettyCodecAdapter {
             org.apache.dubbo.remoting.buffer.ChannelBuffer buffer = new NettyBackedChannelBuffer(out);
             Channel ch = ctx.channel();
             NettyChannel channel = NettyChannel.getOrAddChannel(ch, url, handler);
+            // 调用 DubboCountCodec
             codec.encode(channel, buffer, msg);
         }
     }
 
+    // byte[] -> bean
     private class InternalDecoder extends ByteToMessageDecoder {
 
         @Override

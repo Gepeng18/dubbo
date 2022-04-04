@@ -39,6 +39,9 @@ import static org.apache.dubbo.common.constants.CommonConstants.THREAD_NAME_KEY;
  * EagerThreadPool
  * When the core threads are all in busy,
  * create new thread instead of putting task into blocking queue.
+ *
+ * 对java的线程池进行重构，将最大线程数和任务队列的调度进行更换
+ * 任务优先队列，即优先任务，尽可能让线程处理任务，而不是让任务进队列
  */
 public class EagerThreadPool implements ThreadPool {
 
@@ -52,6 +55,7 @@ public class EagerThreadPool implements ThreadPool {
 
         // init queue and executor
         TaskQueue<Runnable> taskQueue = new TaskQueue<Runnable>(queues <= 0 ? 1 : queues);
+        // 自己定义了一个线程池
         EagerThreadPoolExecutor executor = new EagerThreadPoolExecutor(cores,
                 threads,
                 alive,
