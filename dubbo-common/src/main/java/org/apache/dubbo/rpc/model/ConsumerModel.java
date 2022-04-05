@@ -42,6 +42,7 @@ public class ConsumerModel {
 
     private Object proxyObject;
 
+    // <dubbo::method>
     private Map<String, AsyncMethodInfo> methodConfigs = new HashMap<>();
 
     /**

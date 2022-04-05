@@ -95,14 +95,18 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
+            // 又来无回
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
             int timeout = calculateTimeout(invocation, methodName);
             invocation.put(TIMEOUT_KEY, timeout);
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
+                // 为了对返回值统一处理，这里压根就没管结果返回
                 return AsyncRpcResult.newDefaultAsyncResult(invocation);
             } else {
+                // 异步
+                // 这里思考一下，如何分辨不同的请求呢，分辨 request1 和 request2，其实就是依赖 DefaultFuture 中 requestId
                 ExecutorService executor = getCallbackExecutor(getUrl(), inv);
                 CompletableFuture<AppResponse> appResponseFuture =
                         currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);

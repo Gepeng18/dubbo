@@ -85,6 +85,7 @@ public class FutureFilter implements ClusterFilter, ClusterFilter.Listener {
 
         Object[] params = invocation.getArguments();
         try {
+            // 反射执行onInvoke
             onInvokeMethod.invoke(onInvokeInst, params);
         } catch (InvocationTargetException e) {
             fireThrowCallback(invoker, invocation, e.getTargetException());
@@ -159,11 +160,13 @@ public class FutureFilter implements ClusterFilter, ClusterFilter.Listener {
             onthrowMethod.setAccessible(true);
         }
         Class<?>[] rParaTypes = onthrowMethod.getParameterTypes();
+        // 这里就是判断第一个参数是否是异常
         if (rParaTypes[0].isAssignableFrom(exception.getClass())) {
             try {
                 Object[] args = invocation.getArguments();
                 Object[] params;
 
+                // 把方法入参也传进来
                 if (rParaTypes.length > 1) {
                     if (rParaTypes.length == 2 && rParaTypes[1].isAssignableFrom(Object[].class)) {
                         params = new Object[2];
@@ -192,6 +195,7 @@ public class FutureFilter implements ClusterFilter, ClusterFilter.Listener {
             return asyncMethodInfo;
         }
 
+        // com.courser.gepeng.xxx.ServiceImpl
         ConsumerModel consumerModel = ApplicationModel.getConsumerModel(invoker.getUrl().getServiceKey());
         if (consumerModel == null) {
             return null;
@@ -202,6 +206,7 @@ public class FutureFilter implements ClusterFilter, ClusterFilter.Listener {
             methodName = (String) invocation.getArguments()[0];
         }
 
+        // 返回<dubbo:method> 里面的各种信息
         return consumerModel.getAsyncInfo(methodName);
     }
 

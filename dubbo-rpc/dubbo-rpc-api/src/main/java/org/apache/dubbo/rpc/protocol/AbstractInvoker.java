@@ -260,6 +260,9 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return asyncResult;
     }
 
+    /**
+     * 异步转同步
+     */
     private void waitForResultIfSync(AsyncRpcResult asyncResult, RpcInvocation invocation) {
         if (InvokeMode.SYNC != invocation.getInvokeMode()) {
             return;

@@ -34,6 +34,9 @@ public class AsyncContextImpl implements AsyncContext {
         this.storedServerContext = RpcContext.getServerContext();
     }
 
+    /**
+     * 将rpcContext对象从父线程交给子线程，子线程就可以操作了
+     */
     @Override
     public void write(Object value) {
         if (isAsyncStarted() && stop()) {
