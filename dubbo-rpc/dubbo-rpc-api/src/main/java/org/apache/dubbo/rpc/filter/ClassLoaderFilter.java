@@ -30,6 +30,8 @@ import org.apache.dubbo.rpc.RpcException;
 @Activate(group = CommonConstants.PROVIDER, order = -30000)
 public class ClassLoaderFilter implements Filter {
 
+    // 破坏双亲委派，将invoker的类加载器加载到threadLocal中，让后面调用的时候，使用这个双亲委派
+    // 等调用完，再将之前的类加载器设置回去
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         ClassLoader ocl = Thread.currentThread().getContextClassLoader();

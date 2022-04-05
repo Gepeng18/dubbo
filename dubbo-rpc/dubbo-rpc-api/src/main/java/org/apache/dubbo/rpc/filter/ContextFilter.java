@@ -54,6 +54,12 @@ import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
  * current execution thread.
  *
  * @see RpcContext
+ *
+ * 隐式参数传递，设置上下文
+ * 设置：RpcContext.getContext().setAttachment("word","abc");
+ * 获取：RpcContext.getContext().getAttachment("word")
+ *
+ * 还有一个亲戚：ConsumerContextFilter
  */
 @Activate(group = PROVIDER, order = -10000)
 public class ContextFilter implements Filter, Filter.Listener {

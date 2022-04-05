@@ -61,6 +61,7 @@ public class ConsumerContextFilter implements ClusterFilter, ClusterFilter.Liste
             ((RpcInvocation) invocation).setInvoker(invoker);
         }
 
+        // 集群相关
         ExtensionLoader<PenetrateAttachmentSelector> selectorExtensionLoader = ExtensionLoader.getExtensionLoader(PenetrateAttachmentSelector.class);
         Set<String> supportedSelectors = selectorExtensionLoader.getSupportedExtensions();
         if (CollectionUtils.isNotEmpty(supportedSelectors)) {

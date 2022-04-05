@@ -33,6 +33,20 @@ import static org.apache.dubbo.rpc.Constants.EXECUTES_KEY;
  * The maximum parallel execution request count per method per service for the provider.If the max configured
  * <b>executes</b> is set to 10 and if invoke request where it is already 10 then it will throws exception. It
  * continue the same behaviour un till it is <10.
+ *
+ * 两种service配置的方式(类和方法)
+ *
+ *     <dubbo:service id="producerService"
+ *                    filter="default,myProviderFilter"  拦截器
+ *                    executes="20"  执行限制
+ *                    interface="com.jiangzh.course.dubbo.service.HelloServiceAPI"
+ *                    ref="iProducerService"/>
+ *
+ *     <dubbo:service id="producerService2" filter="default,myProviderFilter"
+ *                    interface="com.jiangzh.course.dubbo.service.HelloServiceAPI"
+ *                    ref="iProducerService">
+ *         <dubbo:method name="sayHello" executes="20" />
+ *     </dubbo:service>
  */
 @Activate(group = CommonConstants.PROVIDER, value = EXECUTES_KEY)
 public class ExecuteLimitFilter implements Filter, Filter.Listener {

@@ -30,6 +30,7 @@ public final class InternalThreadLocalMap {
 
     private static ThreadLocal<InternalThreadLocalMap> slowThreadLocalMap = new ThreadLocal<InternalThreadLocalMap>();
 
+    // 很重要的一个点，下一个索引
     private static final AtomicInteger NEXT_INDEX = new AtomicInteger();
 
     public static final Object UNSET = new Object();
@@ -124,6 +125,7 @@ public final class InternalThreadLocalMap {
         return count - 1;
     }
 
+    // 使用 UNSET 填充数组
     private static Object[] newIndexedVariableTable() {
         Object[] array = new Object[32];
         Arrays.fill(array, UNSET);
@@ -138,6 +140,7 @@ public final class InternalThreadLocalMap {
         return threadLocalMap;
     }
 
+    // 本质上还是InternalThreadLocalMap
     private static InternalThreadLocalMap slowGet() {
         ThreadLocal<InternalThreadLocalMap> slowThreadLocalMap = InternalThreadLocalMap.slowThreadLocalMap;
         InternalThreadLocalMap ret = slowThreadLocalMap.get();

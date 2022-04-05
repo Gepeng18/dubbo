@@ -30,6 +30,9 @@ import java.util.Set;
  * table, and it is useful when accessed frequently.
  * <p></p>
  * This design is learning from {@see io.netty.util.concurrent.FastThreadLocal} which is in Netty.
+ *
+ * 为了优化 threadLocal hash冲突的弊端
+ * 所以底层使用InternalThreadLocalMap，其实就是一个数组
  */
 public class InternalThreadLocal<V> {
 

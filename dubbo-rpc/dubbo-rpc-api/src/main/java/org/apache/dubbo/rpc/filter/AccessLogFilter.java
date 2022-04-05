@@ -59,6 +59,9 @@ import static org.apache.dubbo.rpc.Constants.ACCESS_LOG_KEY;
  *    &lt;appender-ref ref="foo" /&gt;
  * &lt;/logger&gt;
  * </pre></code>
+ *
+ * 当设置 <dubbo:service accesslog="../dubbo-log.txt"/>
+ * URL中就会有accesslog，然后这里就会启动
  */
 @Activate(group = PROVIDER, value = ACCESS_LOG_KEY)
 public class AccessLogFilter implements Filter {

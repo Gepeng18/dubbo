@@ -40,6 +40,9 @@ import static org.apache.dubbo.rpc.Constants.ACTIVES_KEY;
  * </pre>
  *
  * @see Filter
+ *
+ * 消费端的ExecuteLimitFilter，唯一不同的是，这里再超过阈值时，会进行等待，等不了了再报错，
+ * 而不是像 ExecuteLimitFilter 那样，超过阈值就直接抛错
  */
 @Activate(group = CONSUMER, value = ACTIVES_KEY)
 public class ActiveLimitFilter implements Filter, Filter.Listener {
