@@ -128,6 +128,9 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     *  这里就是根据Consumer配置的URL来匹配从注册中心拉下来的所有的providers的URL，根据接口，group，version等等一起来判断
+     */
     protected List<URL> toUrlsWithoutEmpty(URL consumer, Collection<String> providers) {
         // keep old urls
         Map<String, ServiceAddressURL> oldURLs = stringUrls.get(consumer);

@@ -234,6 +234,7 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
                     providers.addAll(children);
                 }
             }
+            // 获取匹配的URL的过程
             return toUrlsWithoutEmpty(url, providers);
         } catch (Throwable e) {
             throw new RpcException("Failed to lookup " + url + " from zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);
