@@ -259,9 +259,11 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 //            ((RpcInvocation) invocation).addObjectAttachmentsIfAbsent(contextAttachments);
 //        }
 
+        // 获取所有invoker(即provider)
         List<Invoker<T>> invokers = list(invocation);
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        // 调用 org.apache.dubbo.rpc.cluster.support.FailoverClusterInvoker.doInvoke
         return doInvoke(invocation, invokers, loadbalance);
     }
 

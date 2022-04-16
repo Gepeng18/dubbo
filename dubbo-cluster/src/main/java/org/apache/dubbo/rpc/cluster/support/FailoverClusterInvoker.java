@@ -58,6 +58,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         List<Invoker<T>> copyInvokers = invokers;
         checkInvokers(copyInvokers, invocation);
         String methodName = RpcUtils.getMethodName(invocation);
+        // 获取invoker的重试次数
         int len = calculateInvokeTimes(methodName);
         // retry loop.
         RpcException le = null; // last exception.
@@ -66,12 +67,18 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         for (int i = 0; i < len; i++) {
             //Reselect before retry to avoid a change of candidate `invokers`.
             //NOTE: if `invokers` changed, then `invoked` also lose accuracy.
+            // 第一次正常执行时，不会执行到这里
             if (i > 0) {
+                // 所有重试的情况，会走到这里
+                // 1、判断consumer是否还存在
                 checkWhetherDestroyed();
+                // 2、重新获取invoker列表(如果重试时间设置的很长的话，可能invoker列表就会变)
                 copyInvokers = list(invocation);
                 // check again
+                // 3、重新检查invokers
                 checkInvokers(copyInvokers, invocation);
             }
+            // 通过负载均衡获取一个invoker
             Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
             invoked.add(invoker);
             RpcContext.getServiceContext().setInvokers((List) invoked);
@@ -100,6 +107,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
                 providers.add(invoker.getUrl().getAddress());
             }
         }
+        // 重试了那么多次，还没成功，就抛出异常了
         throw new RpcException(le.getCode(), "Failed to invoke the method "
                 + methodName + " in the service " + getInterface().getName()
                 + ". Tried " + len + " times of the providers " + providers
@@ -111,6 +119,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     private int calculateInvokeTimes(String methodName) {
+        // 重试+本次，所以+1
         int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;
         RpcContext rpcContext = RpcContext.getClientAttachment();
         Object retry = rpcContext.getObjectAttachment(RETRIES_KEY);

@@ -58,9 +58,12 @@ public class ShortestResponseLoadBalance extends AbstractLoadBalance {
         // Filter out all the shortest response invokers
         for (int i = 0; i < length; i++) {
             Invoker<T> invoker = invokers.get(i);
+            // 记录成功，失败
             RpcStatus rpcStatus = RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName());
             // Calculate the estimated response time from the product of active connections and succeeded average elapsed time.
+            // 历史成功的请求的平均处理时间
             long succeededAverageElapsed = rpcStatus.getSucceededAverageElapsed();
+            // 本provider中还有多少请求等待处理
             int active = rpcStatus.getActive();
             long estimateResponse = succeededAverageElapsed * active;
             int afterWarmup = getWeight(invoker, invocation);

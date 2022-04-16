@@ -112,6 +112,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
             throw new RpcException("Directory already destroyed .url: " + getUrl());
         }
 
+        // org.apache.dubbo.registry.integration.RegistryDirectory.doList
         return doList(invocation);
     }
 

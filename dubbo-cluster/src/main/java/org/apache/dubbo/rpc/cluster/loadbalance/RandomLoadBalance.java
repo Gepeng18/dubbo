@@ -54,6 +54,7 @@ public class RandomLoadBalance extends AbstractLoadBalance {
         // Number of invokers
         int length = invokers.size();
 
+        // 不用管
         if (!needWeightLoadBalance(invokers,invocation)){
             return invokers.get(ThreadLocalRandom.current().nextInt(length));
         }
@@ -74,8 +75,11 @@ public class RandomLoadBalance extends AbstractLoadBalance {
                 sameWeight = false;
             }
         }
+
+        // 那个随机的骚操作
         if (totalWeight > 0 && !sameWeight) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
+            // Random 在大并发下会造成大量自旋锁，导致锁冲突，所以这里使用ThreadLocalRandom
             int offset = ThreadLocalRandom.current().nextInt(totalWeight);
             // Return a invoker based on the random value.
             for (int i = 0; i < length; i++) {

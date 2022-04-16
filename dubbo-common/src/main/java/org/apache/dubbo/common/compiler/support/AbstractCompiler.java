@@ -33,6 +33,7 @@ public abstract class AbstractCompiler implements Compiler {
     @Override
     public Class<?> compile(String code, ClassLoader classLoader) {
         code = code.trim();
+        // 取出package
         Matcher matcher = PACKAGE_PATTERN.matcher(code);
         String pkg;
         if (matcher.find()) {
@@ -41,6 +42,8 @@ public abstract class AbstractCompiler implements Compiler {
             pkg = "";
         }
         matcher = CLASS_PATTERN.matcher(code);
+
+        // 取出class
         String cls;
         if (matcher.find()) {
             cls = matcher.group(1);
@@ -49,6 +52,7 @@ public abstract class AbstractCompiler implements Compiler {
         }
         String className = pkg != null && pkg.length() > 0 ? pkg + "." + cls : cls;
         try {
+            // 先尝试加载className(这个并不是加载code，而是查查有没有className在工程中存在)
             return Class.forName(className, true, org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass()));
         } catch (ClassNotFoundException e) {
             if (!code.endsWith("}")) {

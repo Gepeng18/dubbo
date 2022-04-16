@@ -87,8 +87,10 @@ public abstract class AbstractLoadBalance implements LoadBalance {
                     if (uptime < 0) {
                         return 1;
                     }
+                    // 这个配置没有开放，所以相当于配置10分钟
                     int warmup = invoker.getUrl().getParameter(WARMUP_KEY, DEFAULT_WARMUP);
                     if (uptime > 0 && uptime < warmup) {
+                        // 重新计算权重
                         weight = calculateWarmupWeight((int)uptime, warmup, weight);
                     }
                 }

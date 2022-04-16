@@ -36,6 +36,7 @@ import java.util.List;
  */
 public class FailfastClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
+    // directory里面存了所有的invoker
     public FailfastClusterInvoker(Directory<T> directory) {
         super(directory);
     }
@@ -43,10 +44,12 @@ public class FailfastClusterInvoker<T> extends AbstractClusterInvoker<T> {
     @Override
     public Result doInvoke(Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         checkInvokers(invokers, invocation);
+        // 开始做负载均衡
         Invoker<T> invoker = select(loadbalance, invocation, invokers, null);
         try {
             return invokeWithContext(invoker, invocation);
         } catch (Throwable e) {
+            // failFast的重点，出错了，直接抛错
             if (e instanceof RpcException && ((RpcException) e).isBiz()) { // biz exception.
                 throw (RpcException) e;
             }

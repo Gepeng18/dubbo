@@ -95,7 +95,8 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
 
-        // org.apache.dubbo.rpc.protocol.AbstractInvoker.invoke
+        // 首先调用org.apache.dubbo.rpc.cluster.support.wrapper.MockClusterInvoker.invoke
+        // 再org.apache.dubbo.rpc.protocol.AbstractInvoker.invoke
         return invoker.invoke(rpcInvocation).recreate();
     }
 }

@@ -161,6 +161,10 @@ public class ExtensionLoader<T> {
         return type.isAnnotationPresent(SPI.class);
     }
 
+    /**
+     * 1、根据接口名创建了一个ExtensionLoader
+     * 2、扔进缓存
+     */
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         if (type == null) {
@@ -487,7 +491,7 @@ public class ExtensionLoader<T> {
             return getDefaultExtension();
         }
         final Holder<Object> holder = getOrCreateHolder(name);
-        Object instance = holder.get();
+        Object instance = holder.get( );
         if (instance == null) {
             synchronized (holder) {
                 instance = holder.get();
@@ -637,6 +641,13 @@ public class ExtensionLoader<T> {
         }
     }
 
+    /**
+     * 用来获取代理类
+     * 1、将@Adaptive放在方法上
+     *      1.1 创建动态代理对象
+     * 2、将@Adaptive放在类名上
+     *      2.1 装饰器对象
+     */
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
         Object instance = cachedAdaptiveInstance.get();
@@ -651,6 +662,7 @@ public class ExtensionLoader<T> {
                 instance = cachedAdaptiveInstance.get();
                 if (instance == null) {
                     try {
+                        // 创建
                         instance = createAdaptiveExtension();
                         cachedAdaptiveInstance.set(instance);
                     } catch (Throwable t) {
@@ -690,21 +702,30 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name, boolean wrap) {
+        // 之前loadDirectory加载过相应的类[SPI文件中的实现类]
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null || unacceptableExceptions.contains(name)) {
             throw findException(name);
         }
         try {
+            // 创建类实例
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.getDeclaredConstructor().newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            /**
+             * IOC实现
+             */
             injectExtension(instance);
 
-
+            /**
+             * AOP实现
+             * 本质上：装饰器模式实现(wrapper)，通过装饰器实现AOP
+             */
             if (wrap) {
 
+                // 对wrapper进行排序(loadDirectory()时加载的)
                 List<Class<?>> wrapperClassesList = new ArrayList<>();
                 if (cachedWrapperClasses != null) {
                     wrapperClassesList.addAll(cachedWrapperClasses);
@@ -713,16 +734,26 @@ public class ExtensionLoader<T> {
                 }
 
                 if (CollectionUtils.isNotEmpty(wrapperClassesList)) {
+                    /**
+                     * 遍历所有的wrapper
+                     *
+                     * eg.
+                     * 第一次循环： instance = ProtocolListenerWrapper(DubboProtocol)
+                     * 第二次循环： instance = ProtocolListenerWrapper(ProtocolFilterWrapper(DubboProtocol))
+                     */
                     for (Class<?> wrapperClass : wrapperClassesList) {
                         Wrapper wrapper = wrapperClass.getAnnotation(Wrapper.class);
                         if (wrapper == null
                                 || (ArrayUtils.contains(wrapper.matches(), name) && !ArrayUtils.contains(wrapper.mismatches(), name))) {
+                            // 一层一层包装
+                            // wrapperClass.getConstructor(type) 找到wrapperClass对应的构造方法
                             instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                         }
                     }
                 }
             }
 
+            // 对增强后的[SPI文件中的实现类]进行初始化[调用instance的initialize()]
             initExtension(instance);
             return instance;
         } catch (Throwable t) {
@@ -737,16 +768,19 @@ public class ExtensionLoader<T> {
 
     private T injectExtension(T instance) {
 
+        // objectFactory: ExtensionFactory[SpiExtensionFactory, SpringExtensionFactory]
         if (objectFactory == null) {
             return instance;
         }
 
         try {
+            // 1、取出所有set方法
             for (Method method : instance.getClass().getMethods()) {
                 if (!isSetter(method)) {
                     continue;
                 }
                 /**
+                 * 不需要注入
                  * Check {@link DisableInject} to see if we need auto injection for this property
                  */
                 if (method.getAnnotation(DisableInject.class) != null) {
@@ -757,10 +791,14 @@ public class ExtensionLoader<T> {
                     continue;
                 }
 
+                // 开始执行IOC核心逻辑了
                 try {
+                    // 2、 setUser, 则该函数返回 user
                     String property = getSetterProperty(method);
+                    // 主要是从 SpiExtensionFactory 中取出来
                     Object object = objectFactory.getExtension(pt, property);
                     if (object != null) {
+                        // 通过set方法注入进去
                         method.invoke(instance, object);
                     }
                 } catch (Exception e) {
@@ -832,13 +870,16 @@ public class ExtensionLoader<T> {
 
     /**
      * synchronized in getExtensionClasses
+     * 将SPI的类全部都写到extensionClasses中
      */
     private Map<String, Class<?>> loadExtensionClasses() {
         cacheDefaultExtensionName();
 
         Map<String, Class<?>> extensionClasses = new HashMap<>();
 
+        // 每个strategy代表一个目录
         for (LoadingStrategy strategy : strategies) {
+            // apache 和 alibaba 都加载，估计当时有些包名，改不过来了，所以就这样凑合一下
             loadDirectory(extensionClasses, strategy.directory(), type.getName(), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
             loadDirectory(extensionClasses, strategy.directory(), type.getName().replace("org.apache", "com.alibaba"), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
         }
@@ -872,14 +913,24 @@ public class ExtensionLoader<T> {
         loadDirectory(extensionClasses, dir, type, false, false);
     }
 
+    /**
+     * 维护了多种多样的缓存
+     * cachedAdaptiveClass
+     * cacheWrapperClass
+     * cacheActivateClass
+     * cacheNames
+     * extensionClasses [name, 实现类]
+     */
     private void loadDirectory(Map<String, Class<?>> extensionClasses, String dir, String type,
                                boolean extensionLoaderClassLoaderFirst, boolean overridden, String... excludedPackages) {
         String fileName = dir + type;
         try {
+            // urls即以接口全限定类名为文件名的文件的地址
             Enumeration<java.net.URL> urls = null;
             ClassLoader classLoader = findClassLoader();
 
             // try to load from ExtensionLoader's ClassLoader first
+            // 不会执行
             if (extensionLoaderClassLoaderFirst) {
                 ClassLoader extensionLoaderClassLoader = ExtensionLoader.class.getClassLoader();
                 if (ClassLoader.getSystemClassLoader() != extensionLoaderClassLoader) {
@@ -898,6 +949,7 @@ public class ExtensionLoader<T> {
             if (urls != null) {
                 while (urls.hasMoreElements()) {
                     java.net.URL resourceURL = urls.nextElement();
+                    // 加载类
                     loadResource(extensionClasses, classLoader, resourceURL, overridden, excludedPackages);
                 }
             }
@@ -964,8 +1016,11 @@ public class ExtensionLoader<T> {
                     + clazz.getName() + " is not subtype of interface.");
         }
         if (clazz.isAnnotationPresent(Adaptive.class)) {
+            // 类上如果有@Adaptive注解，eg: ExtensionFactory
+            // 缓存到Adaptive类中
             cacheAdaptiveClass(clazz, overridden);
         } else if (isWrapperClass(clazz)) {
+            // 缓存到wrapper类中
             cacheWrapperClass(clazz);
         } else {
             clazz.getConstructor();
@@ -978,8 +1033,10 @@ public class ExtensionLoader<T> {
 
             String[] names = NAME_SEPARATOR.split(name);
             if (ArrayUtils.isNotEmpty(names)) {
+                // 有@Activate表示是默认激活的
                 cacheActivateClass(clazz, names[0]);
                 for (String n : names) {
+                    // [实现类的类名，name]
                     cacheName(clazz, n);
                     saveInExtensionClass(extensionClasses, clazz, n, overridden);
                 }
@@ -1059,6 +1116,7 @@ public class ExtensionLoader<T> {
      * test if clazz is a wrapper class
      * <p>
      * which has Constructor with given class type as its only argument
+     * 根据类是否有一个构造函数，参数是type，来判断是否是wrapper对象
      */
     private boolean isWrapperClass(Class<?> clazz) {
         try {
@@ -1092,7 +1150,12 @@ public class ExtensionLoader<T> {
         }
     }
 
+
     private Class<?> getAdaptiveExtensionClass() {
+        /**
+         * 1、从文件里把对应的扩展内容读取
+         * 2、分门别类的进行缓存
+         */
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
@@ -1102,6 +1165,7 @@ public class ExtensionLoader<T> {
 
     private Class<?> createAdaptiveExtensionClass() {
         ClassLoader classLoader = findClassLoader();
+        // 1、这里是，如果你写了一个xxx$Adaptive，我就加载
         if (ApplicationModel.getEnvironment().getConfiguration().getBoolean(NATIVE, false)) {
             try {
                 return classLoader.loadClass(type.getName() + "$Adaptive");
@@ -1110,7 +1174,14 @@ public class ExtensionLoader<T> {
                 e.printStackTrace();
             }
         }
+        // 2、没有写，dubbo就自己拼接类的代码，然后进行动态编译
+        /**
+         * 这里可以看视频[9-9]
+         * 生成了一个代理对象的代码 [IOC和AOP都在这里做的，其实是code代码中，
+         * 调用了 本类的 {@link ExtensionLoader#getExtension(java.lang.String)}
+         */
         String code = new AdaptiveClassCodeGenerator(type, cachedDefaultName).generate();
+        // 动态编译 (获取 JavassistCompiler )
         org.apache.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
         return compiler.compile(code, classLoader);
     }

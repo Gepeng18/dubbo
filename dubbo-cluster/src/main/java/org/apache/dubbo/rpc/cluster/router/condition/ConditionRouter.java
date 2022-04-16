@@ -91,9 +91,16 @@ public class ConditionRouter extends AbstractRouter {
             if (rule == null || rule.trim().length() == 0) {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
+            // 去除consumer 和provider相关的属性
             rule = rule.replace("consumer.", "").replace("provider.", "");
             int i = rule.indexOf("=>");
+            /**
+             * 假设 condition:
+             * -' method = sayHello, add => port != 20881'
+             */
+            // 什么时候 -> 对应于 consumer， 在例子中为method = sayHello, add
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();
+            // 做什么事情 -> 对应于 provider， 在例子中为 port != 20881
             String thenRule = i < 0 ? rule.trim() : rule.substring(i + 2).trim();
             Map<String, MatchPair> when = StringUtils.isBlank(whenRule) || "true".equals(whenRule) ? new HashMap<String, MatchPair>() : parseRule(whenRule);
             Map<String, MatchPair> then = StringUtils.isBlank(thenRule) || "false".equals(thenRule) ? null : parseRule(thenRule);
@@ -105,6 +112,22 @@ public class ConditionRouter extends AbstractRouter {
         }
     }
 
+    /**
+     * 假设 condition:
+     * -' method = sayHello, add => port != 20881'
+     *
+     * 返回的是 Map<String, MatchPair>
+     *     key: method
+     *     value:
+     *         - MatchPair[matches = sayHello]
+     *         - MatchPair[matches = addNum]
+     *
+     *
+     * 返回的是 Map<String, MatchPair>
+     *     key: port
+     *     value:
+     *         - MatchPair[mismatches = 20881]
+     */
     private static Map<String, MatchPair> parseRule(String rule)
             throws ParseException {
         Map<String, MatchPair> condition = new HashMap<String, MatchPair>();
@@ -115,6 +138,9 @@ public class ConditionRouter extends AbstractRouter {
         MatchPair pair = null;
         // Multiple values
         Set<String> values = null;
+        /**
+         * ([&!=,]*)\\s*([^&!=,\\s]+)")
+         */
         final Matcher matcher = ROUTE_PATTERN.matcher(rule);
         while (matcher.find()) { // Try to match one by one
             String separator = matcher.group(1);
@@ -175,6 +201,10 @@ public class ConditionRouter extends AbstractRouter {
         return condition;
     }
 
+    /**
+     *  执行invoker过滤的，得到的结果交给loadbalance
+     *  主要执行 matchWhen 和  matchThen
+     */
     @Override
     public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation)
             throws RpcException {
@@ -186,6 +216,8 @@ public class ConditionRouter extends AbstractRouter {
             return invokers;
         }
         try {
+            // 不满足，全部返回
+            // matchWhen 针对URL -> consumer
             if (!matchWhen(url, invocation)) {
                 return invokers;
             }
@@ -195,6 +227,7 @@ public class ConditionRouter extends AbstractRouter {
                 return result;
             }
             for (Invoker<T> invoker : invokers) {
+                // matchThen 针对 invoker -> provider
                 if (matchThen(invoker.getUrl(), url)) {
                     result.add(invoker);
                 }
@@ -232,6 +265,8 @@ public class ConditionRouter extends AbstractRouter {
         for (Map.Entry<String, MatchPair> matchPair : condition.entrySet()) {
             String key = matchPair.getKey();
 
+            // 基本上不用，生产环境不允许使用，影响性能
+            // 根据参数不同进行过滤
             if (key.startsWith(Constants.ARGUMENTS)) {
                 if (!matchArguments(matchPair, invocation)) {
                     return false;
@@ -243,11 +278,14 @@ public class ConditionRouter extends AbstractRouter {
 
             String sampleValue;
             //get real invoked method name from invocation
+            // method = sayHello,addNum
             if (invocation != null && (METHOD_KEY.equals(key) || METHODS_KEY.equals(key))) {
                 sampleValue = invocation.getMethodName();
             } else if (ADDRESS_KEY.equals(key)) {
+                // address = 127.0.0.1:20881
                 sampleValue = url.getAddress();
             } else if (HOST_KEY.equals(key)) {
+                // host = 127.0.0.1
                 sampleValue = url.getHost();
             } else {
                 sampleValue = sample.get(key);

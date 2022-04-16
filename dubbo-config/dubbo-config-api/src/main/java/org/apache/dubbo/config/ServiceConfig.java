@@ -116,6 +116,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
      */
     private static final ScheduledExecutorService DELAY_EXPORT_EXECUTOR = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("DubboServiceDelayExporter", true));
 
+    // 通过SPI获取接口的实现类
     private static final Protocol PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**

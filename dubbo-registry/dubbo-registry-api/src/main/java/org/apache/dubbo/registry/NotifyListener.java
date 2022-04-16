@@ -25,6 +25,7 @@ import java.util.List;
  * NotifyListener. (API, Prototype, ThreadSafe)
  *
  * @see org.apache.dubbo.registry.RegistryService#subscribe(URL, NotifyListener)
+ * zk节点变更，通知dubbo，dubbo通过 NotifyListener 通知自己的各个组件 zk节点变更了
  */
 public interface NotifyListener {
 

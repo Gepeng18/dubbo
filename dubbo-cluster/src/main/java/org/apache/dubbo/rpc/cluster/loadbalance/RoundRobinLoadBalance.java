@@ -110,6 +110,7 @@ public class RoundRobinLoadBalance extends AbstractLoadBalance {
             }
             long cur = weightedRoundRobin.increaseCurrent();
             weightedRoundRobin.setLastUpdate(now);
+            // 找一个权重最大的invoker
             if (cur > maxCurrent) {
                 maxCurrent = cur;
                 selectedInvoker = invoker;
@@ -121,6 +122,7 @@ public class RoundRobinLoadBalance extends AbstractLoadBalance {
             map.entrySet().removeIf(item -> now - item.getValue().getLastUpdate() > RECYCLE_PERIOD);
         }
         if (selectedInvoker != null) {
+            // 选择了你，然后把你的权重设置为 -total，这样下次一定就不是你了
             selectedWRR.sel(totalWeight);
             return selectedInvoker;
         }

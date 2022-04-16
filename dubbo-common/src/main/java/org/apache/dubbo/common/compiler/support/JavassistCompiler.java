@@ -38,8 +38,14 @@ public class JavassistCompiler extends AbstractCompiler {
 
     private static final Pattern FIELD_PATTERN = Pattern.compile("[^\n]+=[^\n]+;");
 
+    /**
+     * 作用：将string code ——> class
+     * javassist : 字节码编译 -> 运行期修改或增加java代码
+     * Java执行过程：Hello.java  -> Hello.class[字节码] -> shell: java Hello.class 运行
+     */
     @Override
     public Class<?> doCompile(String name, String source) throws Throwable {
+        // name = Protocol$Adaptive
         CtClassBuilder builder = new CtClassBuilder();
         builder.setClassName(name);
 
@@ -75,6 +81,7 @@ public class JavassistCompiler extends AbstractCompiler {
                 builder.addMethod("public " + method);
             }
         });
+        // 上面是将类中所有的代码进行补全了
 
         // compile
         ClassLoader classLoader = org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass());

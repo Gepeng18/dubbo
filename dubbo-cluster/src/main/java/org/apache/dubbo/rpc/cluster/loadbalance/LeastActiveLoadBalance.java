@@ -96,6 +96,7 @@ public class LeastActiveLoadBalance extends AbstractLoadBalance {
             // If we got exactly one invoker having the least active value, return this invoker directly.
             return invokers.get(leastIndexes[0]);
         }
+        // 这里也是随机挑一个
         if (!sameWeight && totalWeight > 0) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on 
             // totalWeight.

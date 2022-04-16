@@ -82,6 +82,7 @@ import static org.apache.dubbo.rpc.cluster.Constants.ROUTER_KEY;
 
 /**
  * RegistryDirectory
+ * 主要作用是 把provider信息拿下来，转化成invoker，交给registryDirectory进行存储即可
  */
 public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
@@ -513,6 +514,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         List<Invoker<T>> invokers = null;
         try {
             // Get invokers from cache, only runtime routers will be executed.
+            // 用于过滤
             invokers = routerChain.route(getConsumerUrl(), invocation);
         } catch (Throwable t) {
             logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);
