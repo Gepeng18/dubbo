@@ -20,24 +20,21 @@ import org.apache.dubbo.common.config.Environment;
 import org.apache.dubbo.common.config.InmemoryConfiguration;
 import org.apache.dubbo.common.utils.ClassUtils;
 import org.apache.dubbo.common.utils.MethodUtils;
-import org.apache.dubbo.common.utils.ReflectUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.config.annotation.Method;
 import org.apache.dubbo.config.support.Parameter;
-import org.apache.dubbo.rpc.model.AsyncMethodInfo;
-import org.apache.dubbo.rpc.model.ModuleModel;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.dubbo.config.Constants.ON_INVOKE_INSTANCE_PARAMETER_KEY;
-import static org.apache.dubbo.config.Constants.ON_INVOKE_METHOD_PARAMETER_KEY;
-import static org.apache.dubbo.config.Constants.ON_RETURN_INSTANCE_PARAMETER_KEY;
-import static org.apache.dubbo.config.Constants.ON_RETURN_METHOD_PARAMETER_KEY;
-import static org.apache.dubbo.config.Constants.ON_THROW_INSTANCE_PARAMETER_KEY;
-import static org.apache.dubbo.config.Constants.ON_THROW_METHOD_PARAMETER_KEY;
+import static org.apache.dubbo.config.Constants.ON_INVOKE_INSTANCE_KEY;
+import static org.apache.dubbo.config.Constants.ON_INVOKE_METHOD_KEY;
+import static org.apache.dubbo.config.Constants.ON_RETURN_INSTANCE_KEY;
+import static org.apache.dubbo.config.Constants.ON_RETURN_METHOD_KEY;
+import static org.apache.dubbo.config.Constants.ON_THROW_INSTANCE_KEY;
+import static org.apache.dubbo.config.Constants.ON_THROW_METHOD_KEY;
 
 /**
  * The method configuration
@@ -84,7 +81,7 @@ public class MethodConfig extends AbstractMethodConfig {
     private Boolean sticky;
 
     /**
-     * Whether you need to return
+     * Whether need to return
      */
     private Boolean isReturn;
 
@@ -139,10 +136,6 @@ public class MethodConfig extends AbstractMethodConfig {
     public MethodConfig() {
     }
 
-    public MethodConfig(ModuleModel moduleModel) {
-        super(moduleModel);
-    }
-
     /**
      * TODO remove this construct, the callback method processing logic needs to rely on Spring context
      */
@@ -188,14 +181,13 @@ public class MethodConfig extends AbstractMethodConfig {
 
     /**
      * TODO remove constructMethodConfig
-     *
      * @param methods
      * @return
      */
     @Deprecated
     public static List<MethodConfig> constructMethodConfig(Method[] methods) {
         if (methods != null && methods.length != 0) {
-            List<MethodConfig> methodConfigs = new ArrayList<>(methods.length);
+            List<MethodConfig> methodConfigs = new ArrayList<MethodConfig>(methods.length);
             for (int i = 0; i < methods.length; i++) {
                 MethodConfig methodConfig = new MethodConfig(methods[i]);
                 methodConfigs.add(methodConfig);
@@ -207,7 +199,6 @@ public class MethodConfig extends AbstractMethodConfig {
 
     /**
      * Get method prefixes
-     *
      * @return
      */
     @Override
@@ -216,7 +207,7 @@ public class MethodConfig extends AbstractMethodConfig {
         // parent prefix + method name
         if (parentPrefix != null) {
             List<String> prefixes = new ArrayList<>();
-            prefixes.add(parentPrefix + "." + this.getName());
+            prefixes.add(parentPrefix + "." +this.getName());
             return prefixes;
         } else {
             throw new IllegalStateException("The parent prefix of MethodConfig is null");
@@ -236,9 +227,8 @@ public class MethodConfig extends AbstractMethodConfig {
     private void refreshArgument(ArgumentConfig argument, InmemoryConfiguration subPropsConfiguration) {
         if (argument.getIndex() != null && argument.getIndex() >= 0) {
             String prefix = argument.getIndex() + ".";
-            Environment environment = getScopeModel().getModelEnvironment();
-            List<java.lang.reflect.Method> methods = MethodUtils.getMethods(argument.getClass(),
-                method -> method.getDeclaringClass() != Object.class);
+            Environment environment = ApplicationModel.getEnvironment();
+            java.lang.reflect.Method[] methods = argument.getClass().getMethods();
             for (java.lang.reflect.Method method : methods) {
                 if (MethodUtils.isSetter(method)) {
                     String propertyName = extractPropertyName(method.getName());
@@ -254,7 +244,7 @@ public class MethodConfig extends AbstractMethodConfig {
                         String value = StringUtils.trim(subPropsConfiguration.getString(kebabPropertyName));
                         if (StringUtils.hasText(value) && ClassUtils.isTypeMatch(method.getParameterTypes()[0], value)) {
                             value = environment.resolvePlaceholders(value);
-                            method.invoke(argument, ClassUtils.convertPrimitive(ScopeModelUtil.getFrameworkModel(getScopeModel()), method.getParameterTypes()[0], value));
+                            method.invoke(argument, ClassUtils.convertPrimitive(method.getParameterTypes()[0], value));
                         }
                     } catch (Exception e) {
                         logger.info("Failed to override the property " + method.getName() + " in " +
@@ -263,50 +253,6 @@ public class MethodConfig extends AbstractMethodConfig {
                     }
                 }
             }
-        }
-    }
-
-
-    public AsyncMethodInfo convertMethodConfig2AsyncInfo() {
-        if ((getOninvoke() == null && getOnreturn() == null && getOnthrow() == null)) {
-            return null;
-        }
-
-        //check config conflict
-        if (Boolean.FALSE.equals(isReturn()) && (getOnreturn() != null || getOnthrow() != null)) {
-            throw new IllegalStateException("method config error : return attribute must be set true when on-return or on-throw has been set.");
-        }
-
-        AsyncMethodInfo asyncMethodInfo = new AsyncMethodInfo();
-
-        asyncMethodInfo.setOninvokeInstance(getOninvoke());
-        asyncMethodInfo.setOnreturnInstance(getOnreturn());
-        asyncMethodInfo.setOnthrowInstance(getOnthrow());
-
-        try {
-            if (StringUtils.isNotEmpty(oninvokeMethod)) {
-                asyncMethodInfo.setOninvokeMethod(getMethodByName(getOninvoke().getClass(), oninvokeMethod));
-            }
-
-            if (StringUtils.isNotEmpty(onreturnMethod)) {
-                asyncMethodInfo.setOnreturnMethod(getMethodByName(getOnreturn().getClass(), onreturnMethod));
-            }
-
-            if (StringUtils.isNotEmpty(onthrowMethod)) {
-                asyncMethodInfo.setOnthrowMethod(getMethodByName(getOnthrow().getClass(), onthrowMethod));
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
-
-        return asyncMethodInfo;
-    }
-
-    private java.lang.reflect.Method getMethodByName(Class<?> clazz, String methodName) {
-        try {
-            return ReflectUtils.findMethodByMethodName(clazz, methodName);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
         }
     }
 
@@ -406,7 +352,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.sticky = sticky;
     }
 
-    @Parameter(key = ON_RETURN_INSTANCE_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_RETURN_INSTANCE_KEY, excluded = true, attribute = true)
     public Object getOnreturn() {
         return onreturn;
     }
@@ -415,7 +361,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.onreturn = onreturn;
     }
 
-    @Parameter(key = ON_RETURN_METHOD_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_RETURN_METHOD_KEY, excluded = true, attribute = true)
     public String getOnreturnMethod() {
         return onreturnMethod;
     }
@@ -424,7 +370,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.onreturnMethod = onreturnMethod;
     }
 
-    @Parameter(key = ON_THROW_INSTANCE_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_THROW_INSTANCE_KEY, excluded = true, attribute = true)
     public Object getOnthrow() {
         return onthrow;
     }
@@ -433,7 +379,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.onthrow = onthrow;
     }
 
-    @Parameter(key = ON_THROW_METHOD_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_THROW_METHOD_KEY, excluded = true, attribute = true)
     public String getOnthrowMethod() {
         return onthrowMethod;
     }
@@ -442,7 +388,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.onthrowMethod = onthrowMethod;
     }
 
-    @Parameter(key = ON_INVOKE_INSTANCE_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_INVOKE_INSTANCE_KEY, excluded = true, attribute = true)
     public Object getOninvoke() {
         return oninvoke;
     }
@@ -451,7 +397,7 @@ public class MethodConfig extends AbstractMethodConfig {
         this.oninvoke = oninvoke;
     }
 
-    @Parameter(key = ON_INVOKE_METHOD_PARAMETER_KEY, excluded = true, attribute = true)
+    @Parameter(key = ON_INVOKE_METHOD_KEY, excluded = true, attribute = true)
     public String getOninvokeMethod() {
         return oninvokeMethod;
     }

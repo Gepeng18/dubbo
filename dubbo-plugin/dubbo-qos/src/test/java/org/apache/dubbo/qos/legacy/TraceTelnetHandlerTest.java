@@ -17,16 +17,12 @@
 package org.apache.dubbo.qos.legacy;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.qos.legacy.service.DemoService;
 import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.remoting.telnet.TelnetHandler;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Protocol;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.dubbo.DubboProtocol;
 import org.apache.dubbo.rpc.protocol.dubbo.filter.TraceFilter;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +55,7 @@ public class TraceTelnetHandlerTest {
     @AfterEach
     public void tearDown() {
         reset(mockChannel, mockInvoker);
-        FrameworkModel.destroyAll();
+        ProtocolUtils.closeAll();
     }
 
     @Test
@@ -68,7 +64,7 @@ public class TraceTelnetHandlerTest {
         String message = "org.apache.dubbo.qos.legacy.service.DemoService sayHello 1";
         Class<?> type = DemoService.class;
 
-        ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(DubboProtocol.NAME).export(mockInvoker);
+        DubboProtocol.getDubboProtocol().export(mockInvoker);
         handler.telnet(mockChannel, message);
 
         String key = type.getName() + "." + method;

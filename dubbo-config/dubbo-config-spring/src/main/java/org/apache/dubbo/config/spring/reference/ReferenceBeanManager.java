@@ -16,14 +16,12 @@
  */
 package org.apache.dubbo.config.spring.reference;
 
-import org.apache.dubbo.common.utils.Assert;
-import org.apache.dubbo.config.ReferenceConfig;
-import org.apache.dubbo.config.spring.ReferenceBean;
-import org.apache.dubbo.config.spring.util.DubboBeanUtils;
-import org.apache.dubbo.rpc.model.ModuleModel;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.dubbo.common.utils.Assert;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.config.spring.ReferenceBean;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -55,7 +53,6 @@ public class ReferenceBeanManager implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
     private volatile boolean initialized = false;
-    private ModuleModel moduleModel;
 
     public void addReference(ReferenceBean referenceBean) throws Exception {
         String referenceBeanName = referenceBean.getId();
@@ -118,7 +115,6 @@ public class ReferenceBeanManager implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
-        moduleModel = DubboBeanUtils.getModuleModel(applicationContext);
     }
 
     /**
@@ -173,7 +169,7 @@ public class ReferenceBeanManager implements ApplicationContextAware {
             referenceConfigMap.put(referenceKey, referenceConfig);
 
             // register ReferenceConfig
-            moduleModel.getConfigManager().addReference(referenceConfig);
+            DubboBootstrap.getInstance().reference(referenceConfig);
         }
 
         // associate referenceConfig to referenceBean

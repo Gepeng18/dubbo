@@ -159,7 +159,7 @@ final class NettyChannel extends AbstractChannel {
         boolean success = true;
         int timeout = 0;
         try {
-            ChannelFuture future = channel.writeAndFlush(message);
+            ChannelFuture future = channel.writeAndFlush(message);  // 终于找到了
             if (sent) {
                 // wait timeout ms
                 timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
@@ -218,7 +218,7 @@ final class NettyChannel extends AbstractChannel {
 
     @Override
     public void setAttribute(String key, Object value) {
-        // The null value is not allowed in the ConcurrentHashMap.
+        // The null value is unallowed in the ConcurrentHashMap.
         if (value == null) {
             attributes.remove(key);
         } else {

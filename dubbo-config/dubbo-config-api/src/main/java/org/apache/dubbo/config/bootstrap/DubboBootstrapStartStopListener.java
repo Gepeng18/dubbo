@@ -26,7 +26,6 @@ import org.apache.dubbo.common.extension.SPI;
  * @see DubboBootstrap
  */
 @SPI
-@Deprecated
 public interface DubboBootstrapStartStopListener {
 
     void onStart(DubboBootstrap bootstrap);

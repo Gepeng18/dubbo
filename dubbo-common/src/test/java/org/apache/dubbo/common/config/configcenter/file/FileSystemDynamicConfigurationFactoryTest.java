@@ -16,8 +16,7 @@
  */
 package org.apache.dubbo.common.config.configcenter.file;
 
-import org.apache.dubbo.common.config.ConfigurationUtils;
-import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.common.config.configcenter.DynamicConfigurationFactory;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +31,6 @@ public class FileSystemDynamicConfigurationFactoryTest {
 
     @Test
     public void testGetFactory() {
-        assertEquals(FileSystemDynamicConfigurationFactory.class, ConfigurationUtils.getDynamicConfigurationFactory(ApplicationModel.defaultModel(), "file").getClass());
+        assertEquals(FileSystemDynamicConfigurationFactory.class, DynamicConfigurationFactory.getDynamicConfigurationFactory("file").getClass());
     }
 }

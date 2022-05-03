@@ -23,7 +23,6 @@ import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.registry.client.DefaultServiceInstance;
 import org.apache.dubbo.registry.client.ServiceInstance;
 import org.apache.dubbo.registry.nacos.NacosNamingServiceWrapper;
-import org.apache.dubbo.rpc.model.ScopeModelUtil;
 
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
@@ -37,6 +36,7 @@ import java.util.Properties;
 
 import static com.alibaba.nacos.api.PropertyKeyConst.NAMING_LOAD_CACHE_AT_START;
 import static com.alibaba.nacos.api.PropertyKeyConst.SERVER_ADDR;
+import static com.alibaba.nacos.api.common.Constants.DEFAULT_GROUP;
 import static com.alibaba.nacos.client.naming.utils.UtilAndComs.NACOS_NAMING_LOG_NAME;
 import static org.apache.dubbo.common.constants.RemotingConstants.BACKUP_KEY;
 import static org.apache.dubbo.common.utils.StringConstantFieldValuePredicate.of;
@@ -49,7 +49,6 @@ import static org.apache.dubbo.common.utils.StringConstantFieldValuePredicate.of
 public class NacosNamingServiceUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(NacosNamingServiceUtils.class);
-    private static String NACOS_GROUP_KEY = "nacos.group";
 
     /**
      * Convert the {@link ServiceInstance} to {@link Instance}
@@ -76,16 +75,23 @@ public class NacosNamingServiceUtils {
      * @return non-null
      * @since 2.7.5
      */
-    public static ServiceInstance toServiceInstance(URL registryUrl, Instance instance) {
-        DefaultServiceInstance serviceInstance =
-            new DefaultServiceInstance(
-                NamingUtils.getServiceName(instance.getServiceName()),
-                instance.getIp(), instance.getPort(),
-                ScopeModelUtil.getApplicationModel(registryUrl.getScopeModel()));
+    public static ServiceInstance toServiceInstance(Instance instance) {
+        DefaultServiceInstance serviceInstance = new DefaultServiceInstance(NamingUtils.getServiceName(instance.getServiceName()), instance.getIp(), instance.getPort());
         serviceInstance.setMetadata(instance.getMetadata());
         serviceInstance.setEnabled(instance.isEnabled());
         serviceInstance.setHealthy(instance.isHealthy());
         return serviceInstance;
+    }
+
+    /**
+     * The group of {@link NamingService} to register
+     *
+     * @param connectionURL {@link URL connection url}
+     * @return non-null, "default" as default
+     * @since 2.7.5
+     */
+    public static String getGroup(URL connectionURL) {
+        return connectionURL.getParameter("nacos.group", DEFAULT_GROUP);
     }
 
     /**
@@ -118,13 +124,13 @@ public class NacosNamingServiceUtils {
 
     private static void setServerAddr(URL url, Properties properties) {
         StringBuilder serverAddrBuilder =
-            new StringBuilder(url.getHost()) // Host
-                .append(':')
-                .append(url.getPort()); // Port
+                new StringBuilder(url.getHost()) // Host
+                        .append(':')
+                        .append(url.getPort()); // Port
 
         // Append backup parameter as other servers
         String backup = url.getParameter(BACKUP_KEY);
-        if (StringUtils.isNotEmpty(backup)) {
+        if (backup != null) {
             serverAddrBuilder.append(',').append(backup);
         }
 
@@ -133,7 +139,7 @@ public class NacosNamingServiceUtils {
     }
 
     private static void setProperties(URL url, Properties properties) {
-        putPropertyIfAbsent(url, properties, NACOS_NAMING_LOG_NAME, null);
+        putPropertyIfAbsent(url, properties, NACOS_NAMING_LOG_NAME);
 
         // @since 2.7.8 : Refactoring
         // Get the parameters from constants
@@ -144,15 +150,19 @@ public class NacosNamingServiceUtils {
         putPropertyIfAbsent(url, properties, NAMING_LOAD_CACHE_AT_START, "true");
     }
 
+    private static void putPropertyIfAbsent(URL url, Properties properties, String propertyName) {
+        String propertyValue = url.getParameter(propertyName);
+        if (StringUtils.isNotEmpty(propertyValue)) {
+            properties.setProperty(propertyName, propertyValue);
+        }
+    }
+
     private static void putPropertyIfAbsent(URL url, Properties properties, String propertyName, String defaultValue) {
         String propertyValue = url.getParameter(propertyName);
         if (StringUtils.isNotEmpty(propertyValue)) {
             properties.setProperty(propertyName, propertyValue);
         } else {
-            // when defaultValue is empty, we should not set empty value
-            if (StringUtils.isNotEmpty(defaultValue)) {
-                properties.setProperty(propertyName, defaultValue);
-            }
+            properties.setProperty(propertyName, defaultValue);
         }
     }
 }

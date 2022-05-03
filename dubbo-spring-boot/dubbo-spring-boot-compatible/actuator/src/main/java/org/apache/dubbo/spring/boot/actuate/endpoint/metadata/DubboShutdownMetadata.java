@@ -18,16 +18,16 @@ package org.apache.dubbo.spring.boot.actuate.endpoint.metadata;
 
 import org.apache.dubbo.config.ReferenceConfigBase;
 import org.apache.dubbo.config.spring.ServiceBean;
-import org.apache.dubbo.registry.support.RegistryManager;
 import org.apache.dubbo.rpc.model.ApplicationModel;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static org.apache.dubbo.registry.support.AbstractRegistryFactory.getRegistries;
 
 /**
  * Dubbo Shutdown
@@ -37,17 +37,13 @@ import java.util.TreeMap;
 @Component
 public class DubboShutdownMetadata extends AbstractDubboMetadata {
 
-    @Autowired
-    private ApplicationModel applicationModel;
 
     public Map<String, Object> shutdown() throws Exception {
 
         Map<String, Object> shutdownCountData = new LinkedHashMap<>();
 
         // registries
-        RegistryManager registryManager = applicationModel.getBeanFactory().getBean(RegistryManager.class);
-
-        int registriesCount = registryManager.getRegistries().size();
+        int registriesCount = getRegistries().size();
 
         // protocols
         int protocolsCount = getProtocolConfigsBeanMap().size();
@@ -65,7 +61,7 @@ public class DubboShutdownMetadata extends AbstractDubboMetadata {
         shutdownCountData.put("services", serviceBeansMap.size());
 
         // Reference Beans
-        Collection<ReferenceConfigBase<?>> references = applicationModel.getDefaultModule().getConfigManager().getReferences();
+        Collection<ReferenceConfigBase<?>> references = ApplicationModel.getConfigManager().getReferences();
         for (ReferenceConfigBase<?> reference : references) {
             reference.destroy();
         }

@@ -20,12 +20,12 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.cluster.ClusterInvoker;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.dubbo.common.constants.CommonConstants.TIMESTAMP_KEY;
+import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_KEY;
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_SERVICE_REFERENCE_PATH;
 import static org.apache.dubbo.rpc.cluster.Constants.WEIGHT_KEY;
 
@@ -54,6 +54,7 @@ public class RandomLoadBalance extends AbstractLoadBalance {
         // Number of invokers
         int length = invokers.size();
 
+        // 若不需要加权负载均衡，则直接生成一个[0, length)的随机数，选择出invoker
         if (!needWeightLoadBalance(invokers,invocation)){
             return invokers.get(ThreadLocalRandom.current().nextInt(length));
         }
@@ -61,6 +62,7 @@ public class RandomLoadBalance extends AbstractLoadBalance {
         // Every invoker has the same weight?
         boolean sameWeight = true;
         // the maxWeight of every invokers, the minWeight = 0 or the maxWeight of the last invoker
+        // 记录当前invoker及其前面所有invoker的权重之和
         int[] weights = new int[length];
         // The sum of weights
         int totalWeight = 0;
@@ -74,8 +76,11 @@ public class RandomLoadBalance extends AbstractLoadBalance {
                 sameWeight = false;
             }
         }
+
+        // 处理各invoker的权重不同的情况
         if (totalWeight > 0 && !sameWeight) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
+            // 生成一个随机权重[0, totalWeight)
             int offset = ThreadLocalRandom.current().nextInt(totalWeight);
             // Return a invoker based on the random value.
             for (int i = 0; i < length; i++) {
@@ -84,6 +89,8 @@ public class RandomLoadBalance extends AbstractLoadBalance {
                 }
             }
         }
+
+        // 处理各invoker权重相同的情况(与无权重的处理方式相同）
         // If all invokers have the same weight value or totalWeight=0, return evenly.
         return invokers.get(ThreadLocalRandom.current().nextInt(length));
     }
@@ -92,13 +99,9 @@ public class RandomLoadBalance extends AbstractLoadBalance {
 
         Invoker invoker = invokers.get(0);
         URL invokerUrl = invoker.getUrl();
-        if (invoker instanceof ClusterInvoker) {
-            invokerUrl = ((ClusterInvoker<?>) invoker).getRegistryUrl();
-        }
-
         // Multiple registry scenario, load balance among multiple registries.
         if (REGISTRY_SERVICE_REFERENCE_PATH.equals(invokerUrl.getServiceInterface())) {
-            String weight = invokerUrl.getParameter(WEIGHT_KEY);
+            String weight = invokerUrl.getParameter(REGISTRY_KEY + "." + WEIGHT_KEY);
             if (StringUtils.isNotEmpty(weight)) {
                 return true;
             }

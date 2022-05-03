@@ -33,8 +33,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractZookeeperClient.class);
 
-    // may hang up to wait name resolution up to 10s
-    protected int DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
+    protected int DEFAULT_CONNECTION_TIMEOUT_MS = 5 * 1000;
     protected int DEFAULT_SESSION_TIMEOUT_MS = 60 * 1000;
 
     private final URL url;
@@ -207,10 +206,7 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
         return doGetConfigItem(path);
     }
 
-    protected void doClose() {
-        // Break circular reference of zk client
-        stateListeners.clear();
-    }
+    protected abstract void doClose();
 
     protected abstract void createPersistent(String path);
 

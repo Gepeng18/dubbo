@@ -30,6 +30,8 @@ public abstract class CacheableRouterFactory implements RouterFactory {
 
     @Override
     public Router getRouter(URL url) {
+        // 从缓存map中获取当前服务标识key对应的router，
+        // 若没有，则创建一个router，放入到缓存map后返回新创建的router
         return routerMap.computeIfAbsent(url.getServiceKey(), k -> createRouter(url));
     }
 

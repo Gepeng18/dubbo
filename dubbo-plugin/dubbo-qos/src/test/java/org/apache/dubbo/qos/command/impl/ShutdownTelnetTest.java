@@ -18,8 +18,8 @@ package org.apache.dubbo.qos.command.impl;
 
 import org.apache.dubbo.qos.command.BaseCommand;
 import org.apache.dubbo.qos.command.CommandContext;
+import org.apache.dubbo.qos.legacy.ProtocolUtils;
 import org.apache.dubbo.remoting.RemotingException;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
@@ -33,13 +33,12 @@ import static org.mockito.Mockito.reset;
 
 public class ShutdownTelnetTest {
 
-    private BaseCommand shutdown;
+    private static final BaseCommand shutdown = new ShutdownTelnet();
     private Channel mockChannel;
     private CommandContext mockCommandContext;
 
     @BeforeEach
     public void setUp() {
-        shutdown = new ShutdownTelnet(FrameworkModel.defaultModel());
         mockCommandContext = mock(CommandContext.class);
         mockChannel = mock(Channel.class);
         given(mockCommandContext.getRemote()).willReturn(mockChannel);
@@ -47,7 +46,7 @@ public class ShutdownTelnetTest {
 
     @AfterEach
     public void after() {
-        FrameworkModel.destroyAll();
+        ProtocolUtils.closeAll();
         reset(mockChannel, mockCommandContext);
     }
 
@@ -64,6 +63,6 @@ public class ShutdownTelnetTest {
         String result = shutdown.execute(mockCommandContext, new String[]{"-t", "" + sleepTime});
         long end = System.currentTimeMillis();
         assertTrue(result.contains("Application has shutdown successfully"), result);
-        assertTrue((end - start) >= sleepTime, "sleepTime: " + sleepTime + ", execTime: " + (end - start));
+        assertTrue((end - start) > sleepTime, "sleepTime: " + sleepTime + ", execTime: " + (end - start));
     }
 }

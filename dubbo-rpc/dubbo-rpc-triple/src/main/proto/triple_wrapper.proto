@@ -29,10 +29,3 @@ message TripleResponseWrapper {
     bytes data = 2;
     string type = 3;
 }
-
-message TripleExceptionWrapper {
-    string language = 1;
-    string serialization = 2;
-    string className = 3;
-    bytes data = 4;
-}

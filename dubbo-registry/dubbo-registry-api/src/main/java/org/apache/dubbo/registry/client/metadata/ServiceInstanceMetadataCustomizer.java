@@ -16,14 +16,17 @@
  */
 package org.apache.dubbo.registry.client.metadata;
 
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.infra.InfraAdapter;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.metadata.MetadataInfo;
+import org.apache.dubbo.metadata.MetadataParamsFilter;
+import org.apache.dubbo.metadata.WritableMetadataService;
 import org.apache.dubbo.registry.client.ServiceInstance;
 import org.apache.dubbo.registry.client.ServiceInstanceCustomizer;
+import org.apache.dubbo.registry.client.metadata.store.InMemoryWritableMetadataService;
 import org.apache.dubbo.rpc.model.ApplicationModel;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,46 +34,60 @@ import java.util.Set;
 import static org.apache.dubbo.common.constants.CommonConstants.APPLICATION_KEY;
 
 /**
- * <p>Intercepting instance to load instance-level params from different sources before being registered into registry.</p>
- *
- * The sources can be one or both of the following:
- * <ul>
- *  <li>os environment</li>
- *  <li>vm options</li>
- * </ul>
- *
- * So, finally, the keys left in order will be:
- * <ul>
- *  <li>all keys specified by sources above</li>
- *  <li>keys found in metadata info</li>
- * </ul>
- *
  *
  */
 public class ServiceInstanceMetadataCustomizer implements ServiceInstanceCustomizer {
 
     @Override
-    public void customize(ServiceInstance serviceInstance, ApplicationModel applicationModel) {
-        MetadataInfo metadataInfo = serviceInstance.getServiceMetadata();
+    public void customize(ServiceInstance serviceInstance) {
+        ExtensionLoader<MetadataParamsFilter> loader = ExtensionLoader.getExtensionLoader(MetadataParamsFilter.class);
+        Set<MetadataParamsFilter> paramsFilters = loader.getSupportedExtensionInstances();
+
+        InMemoryWritableMetadataService localMetadataService
+                = (InMemoryWritableMetadataService) WritableMetadataService.getDefaultExtension();
+        // pick the first interface metadata available.
+        // FIXME, check the same key in different urls has the same value
+        Map<String, MetadataInfo> metadataInfos = localMetadataService.getMetadataInfos();
+        if (CollectionUtils.isEmptyMap(metadataInfos)) {
+            return;
+        }
+        MetadataInfo metadataInfo = metadataInfos.values().iterator().next();
         if (metadataInfo == null || CollectionUtils.isEmptyMap(metadataInfo.getServices())) {
             return;
         }
+        MetadataInfo.ServiceInfo serviceInfo = metadataInfo.getServices().values().iterator().next();
+        Map<String, String> allParams = new HashMap<>(serviceInfo.getUrl().getParameters());
 
-        // try to load instance params that do not appear in service urls
-        // TODO, duplicate snippet in ApplicationConfig
-        Map<String, String> extraParameters = Collections.emptyMap();
-        Set<InfraAdapter> adapters = applicationModel.getExtensionLoader(InfraAdapter.class).getSupportedExtensionInstances();
+        // load instance params users want to load.
+        // TODO, duplicate logic with that in ApplicationConfig
+        Set<InfraAdapter> adapters = ExtensionLoader.getExtensionLoader(InfraAdapter.class).getSupportedExtensionInstances();
         if (CollectionUtils.isNotEmpty(adapters)) {
             Map<String, String> inputParameters = new HashMap<>();
-            inputParameters.put(APPLICATION_KEY, applicationModel.getApplicationName());
+            inputParameters.put(APPLICATION_KEY, ApplicationModel.getName());
             for (InfraAdapter adapter : adapters) {
-                extraParameters = adapter.getExtraAttributes(inputParameters);
+                Map<String, String> extraParameters = adapter.getExtraAttributes(inputParameters);
+                if (CollectionUtils.isNotEmptyMap(extraParameters)) {
+                    extraParameters.forEach(allParams::putIfAbsent);
+                }
             }
         }
 
-        serviceInstance.getMetadata().putAll(extraParameters);;
-        if (CollectionUtils.isNotEmptyMap(metadataInfo.getInstanceParams())) {
-            serviceInstance.getMetadata().putAll(metadataInfo.getInstanceParams());
+        if (CollectionUtils.isEmpty(paramsFilters)) {
+            serviceInstance.getMetadata().putAll(allParams);
+            return;
         }
+
+        paramsFilters.forEach(filter -> {
+            String[] included = filter.instanceParamsIncluded();
+            if (included == null) {
+                serviceInstance.getMetadata().putAll(allParams);
+            } else {
+                for (String p : included) {
+                    if (allParams.get(p) != null) {
+                        serviceInstance.getMetadata().put(p, allParams.get(p));
+                    }
+                }
+            }
+        });
     }
 }

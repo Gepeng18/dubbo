@@ -56,27 +56,36 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         List<Invoker<T>> copyInvokers = invokers;
+        // 检测invokers列表是否为空
         checkInvokers(copyInvokers, invocation);
+        // 获取RPC调用的方法名
         String methodName = RpcUtils.getMethodName(invocation);
+        // 获取retries属性值
         int len = calculateInvokeTimes(methodName);
         // retry loop.
         RpcException le = null; // last exception.
+        // 存放所有已经尝试调用过的invoker，这些invoker中，除了最后一个外，其它的都是不可用的
         List<Invoker<T>> invoked = new ArrayList<Invoker<T>>(copyInvokers.size()); // invoked invokers.
         Set<String> providers = new HashSet<String>(len);
+
         for (int i = 0; i < len; i++) {
             //Reselect before retry to avoid a change of candidate `invokers`.
             //NOTE: if `invokers` changed, then `invoked` also lose accuracy.
             if (i > 0) {
+                // 检测委托对象invoker是否被销毁
                 checkWhetherDestroyed();
+                // 更新本地invoker列表
                 copyInvokers = list(invocation);
-                // check again
+                // check again 重新检测invokers列表是否为空
                 checkInvokers(copyInvokers, invocation);
             }
+            // 负载均衡
             Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
+            // 将选择出的invoker写入到invoked集合
             invoked.add(invoker);
             RpcContext.getServiceContext().setInvokers((List) invoked);
-            boolean success = false;
             try {
+                // 远程调用
                 Result result = invokeWithContext(invoker, invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + methodName
@@ -89,7 +98,6 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
                             + " using the dubbo version " + Version.getVersion() + ". Last error is: "
                             + le.getMessage(), le);
                 }
-                success = true;
                 return result;
             } catch (RpcException e) {
                 if (e.isBiz()) { // biz exception.
@@ -99,11 +107,9 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             } catch (Throwable e) {
                 le = new RpcException(e.getMessage(), e);
             } finally {
-                if (!success) {
-                    providers.add(invoker.getUrl().getAddress());
-                }
+                providers.add(invoker.getUrl().getAddress());
             }
-        }
+        }  // end-for
         throw new RpcException(le.getCode(), "Failed to invoke the method "
                 + methodName + " in the service " + getInterface().getName()
                 + ". Tried " + len + " times of the providers " + providers
@@ -115,7 +121,10 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     private int calculateInvokeTimes(String methodName) {
+        // 获取xml中retries属性值，然后为其加1
         int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;
+
+        // 从RpcContext中获取retries属性值
         RpcContext rpcContext = RpcContext.getClientAttachment();
         Object retry = rpcContext.getObjectAttachment(RETRIES_KEY);
         if (retry instanceof Number) {

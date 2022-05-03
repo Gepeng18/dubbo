@@ -16,10 +16,9 @@
  */
 package org.apache.dubbo.config;
 
+import org.apache.dubbo.common.lang.ShutdownHookCallbacks;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.utils.Assert;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,7 +32,9 @@ public class DubboShutdownHook extends Thread {
 
     private static final Logger logger = LoggerFactory.getLogger(DubboShutdownHook.class);
 
-    private final ApplicationModel applicationModel;
+    private static final DubboShutdownHook DUBBO_SHUTDOWN_HOOK = new DubboShutdownHook("DubboShutdownHook");
+
+    private final ShutdownHookCallbacks callbacks = ShutdownHookCallbacks.INSTANCE;
 
     /**
      * Has it already been registered or not?
@@ -43,28 +44,37 @@ public class DubboShutdownHook extends Thread {
     /**
      * Has it already been destroyed or not?
      */
-    private final AtomicBoolean destroyed = new AtomicBoolean(false);
+    private static final AtomicBoolean destroyed = new AtomicBoolean(false);
 
-    public DubboShutdownHook(ApplicationModel applicationModel) {
-        super("DubboShutdownHook");
-        this.applicationModel = applicationModel;
-        Assert.notNull(this.applicationModel, "ApplicationModel is null");
+    private DubboShutdownHook(String name) {
+        super(name);
+    }
+
+    public static DubboShutdownHook getDubboShutdownHook() {
+        return DUBBO_SHUTDOWN_HOOK;
     }
 
     @Override
     public void run() {
-
         if (destroyed.compareAndSet(false, true)) {
             if (logger.isInfoEnabled()) {
                 logger.info("Run shutdown hook now.");
             }
 
+            callback();
             doDestroy();
         }
     }
 
-    private void doDestroy() {
-        applicationModel.destroy();
+    /**
+     * For testing purpose
+     */
+    void clear() {
+        callbacks.clear();
+    }
+
+    private void callback() {
+        callbacks.callback();
     }
 
     /**
@@ -72,13 +82,8 @@ public class DubboShutdownHook extends Thread {
      */
     public void register() {
         if (registered.compareAndSet(false, true)) {
-            try {
-                Runtime.getRuntime().addShutdownHook(this);
-            } catch (IllegalStateException e) {
-                logger.warn("register shutdown hook failed: " + e.getMessage());
-            } catch (Exception e) {
-                logger.warn("register shutdown hook failed: " + e.getMessage(), e);
-            }
+            DubboShutdownHook dubboShutdownHook = getDubboShutdownHook();
+            Runtime.getRuntime().addShutdownHook(dubboShutdownHook);
         }
     }
 
@@ -87,17 +92,17 @@ public class DubboShutdownHook extends Thread {
      */
     public void unregister() {
         if (registered.compareAndSet(true, false)) {
-            if (this.isAlive()) {
-                // DubboShutdownHook thread is running
-                return;
-            }
-            try {
-                Runtime.getRuntime().removeShutdownHook(this);
-            } catch (IllegalStateException e) {
-                logger.warn("unregister shutdown hook failed: " + e.getMessage());
-            } catch (Exception e) {
-                logger.warn("unregister shutdown hook failed: " + e.getMessage(), e);
-            }
+            DubboShutdownHook dubboShutdownHook = getDubboShutdownHook();
+            Runtime.getRuntime().removeShutdownHook(dubboShutdownHook);
+        }
+    }
+
+    /**
+     * Destroy all the resources, including registries and protocols.
+     */
+    public void doDestroy() {
+        if (logger.isInfoEnabled()) {
+            logger.info("Dubbo Service has been destroyed.");
         }
     }
 

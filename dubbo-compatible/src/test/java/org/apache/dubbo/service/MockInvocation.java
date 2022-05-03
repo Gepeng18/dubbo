@@ -19,7 +19,6 @@ package org.apache.dubbo.service;
 import org.apache.dubbo.rpc.AttachmentsAdapter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.model.ServiceModel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -129,16 +128,6 @@ public class MockInvocation implements Invocation {
 
     @Override
     public Object get(Object key) {
-        return null;
-    }
-
-    @Override
-    public void setServiceModel(ServiceModel serviceModel) {
-
-    }
-
-    @Override
-    public ServiceModel getServiceModel() {
         return null;
     }
 

@@ -72,34 +72,31 @@ public class BroadcastClusterInvoker<T> extends AbstractClusterInvoker<T> {
                     if (null != resultException) {
                         exception = getRpcException(result.getException());
                         logger.warn(exception.getMessage(), exception);
-                        failIndex++;
                         if (failIndex == failThresholdIndex) {
                             break;
+                        } else {
+                            failIndex++;
                         }
                     }
                 }
             } catch (Throwable e) {
                 exception = getRpcException(e);
                 logger.warn(exception.getMessage(), exception);
-                failIndex++;
                 if (failIndex == failThresholdIndex) {
                     break;
+                } else {
+                    failIndex++;
                 }
             }
         }
 
         if (exception != null) {
             if (failIndex == failThresholdIndex) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
+                logger.debug(
                         String.format("The number of BroadcastCluster call failures has reached the threshold %s", failThresholdIndex));
-
-                }
             } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(String.format("The number of BroadcastCluster call failures has not reached the threshold %s, fail size is %s",
-                        failThresholdIndex, failIndex));
-                }
+                logger.debug(String.format("The number of BroadcastCluster call failures has not reached the threshold %s, fail size is %s",
+                        failIndex));
             }
             throw exception;
         }
@@ -108,7 +105,7 @@ public class BroadcastClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     private RpcException getRpcException(Throwable throwable) {
-        RpcException rpcException;
+        RpcException rpcException = null;
         if (throwable instanceof RpcException) {
             rpcException = (RpcException) throwable;
         } else {

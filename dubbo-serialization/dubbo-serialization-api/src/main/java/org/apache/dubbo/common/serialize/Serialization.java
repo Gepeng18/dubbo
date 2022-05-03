@@ -18,7 +18,6 @@ package org.apache.dubbo.common.serialize;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Adaptive;
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 import java.io.IOException;
@@ -33,7 +32,7 @@ import java.io.OutputStream;
  *     e.g. &lt;dubbo:protocol serialization="xxx" /&gt;
  * </pre>
  */
-@SPI(value = "hessian2", scope = ExtensionScope.FRAMEWORK)
+@SPI("hessian2")
 public interface Serialization {
 
     /**

@@ -42,13 +42,12 @@ import static org.springframework.context.ConfigurableApplicationContext.ENVIRON
 
 /**
  * The {@link ApplicationListener} class for Dubbo Config {@link BeanDefinition Bean Definition} to resolve conflict
- *
  * @see BeanDefinition
  * @see ApplicationListener
  * @since 2.7.5
  */
 public class DubboConfigBeanDefinitionConflictApplicationListener implements ApplicationListener<ContextRefreshedEvent>,
-    Ordered {
+        Ordered {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -64,13 +63,12 @@ public class DubboConfigBeanDefinitionConflictApplicationListener implements App
         if (beanFactory instanceof BeanDefinitionRegistry) {
             return (BeanDefinitionRegistry) beanFactory;
         }
-        throw new IllegalStateException("The BeanFactory in the ApplicationContext must bea subclass of BeanDefinitionRegistry");
+        throw new IllegalStateException("");
     }
 
     /**
      * Resolve the unique {@link ApplicationConfig} Bean
-     *
-     * @param registry    {@link BeanDefinitionRegistry} instance
+     * @param registry {@link BeanDefinitionRegistry} instance
      * @param beanFactory {@link ConfigurableListableBeanFactory} instance
      * @see EnableDubboConfig
      */
@@ -86,28 +84,30 @@ public class DubboConfigBeanDefinitionConflictApplicationListener implements App
 
         // Remove ApplicationConfig Beans that are configured by "dubbo.application.*"
         Stream.of(beansNames)
-            .filter(beansName -> isConfiguredApplicationConfigBeanName(environment, beansName))
-            .forEach(registry::removeBeanDefinition);
+                .filter(beansName -> isConfiguredApplicationConfigBeanName(environment, beansName))
+                .forEach(registry::removeBeanDefinition);
 
         beansNames = beanNamesForTypeIncludingAncestors(beanFactory, ApplicationConfig.class);
 
         if (beansNames.length > 1) {
             throw new IllegalStateException(String.format("There are more than one instances of %s, whose bean definitions : %s",
-                ApplicationConfig.class.getSimpleName(),
-                Stream.of(beansNames)
-                    .map(registry::getBeanDefinition)
-                    .collect(Collectors.toList()))
+                    ApplicationConfig.class.getSimpleName(),
+                    Stream.of(beansNames)
+                            .map(registry::getBeanDefinition)
+                            .collect(Collectors.toList()))
             );
         }
     }
 
     private boolean isConfiguredApplicationConfigBeanName(Environment environment, String beanName) {
         boolean removed = BeanFactoryUtils.isGeneratedBeanName(beanName)
-            // Dubbo ApplicationConfig id as bean name
-            || Objects.equals(beanName, environment.getProperty("dubbo.application.id"));
+                // Dubbo ApplicationConfig id as bean name
+                || Objects.equals(beanName, environment.getProperty("dubbo.application.id"));
 
-        if (removed && logger.isDebugEnabled()) {
-            logger.debug("The {} bean [ name : {} ] has been removed!", ApplicationConfig.class.getSimpleName(), beanName);
+        if (removed) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("The {} bean [ name : {} ] has been removed!", ApplicationConfig.class.getSimpleName(), beanName);
+            }
         }
 
         return removed;

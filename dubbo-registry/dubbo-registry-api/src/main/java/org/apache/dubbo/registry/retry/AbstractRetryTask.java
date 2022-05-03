@@ -53,7 +53,7 @@ public abstract class AbstractRetryTask implements TimerTask {
     /**
      * retry period
      */
-    private final long retryPeriod;
+    final long retryPeriod;
 
     /**
      * define the most retry times

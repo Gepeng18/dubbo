@@ -18,12 +18,6 @@ package org.apache.dubbo.registry.client.migration.model;
 
 import java.util.Map;
 
-import static org.apache.dubbo.registry.Constants.MIGRATION_RULE_DELAY_KEY;
-import static org.apache.dubbo.registry.Constants.MIGRATION_RULE_FORCE_KEY;
-import static org.apache.dubbo.registry.Constants.MIGRATION_RULE_PROPORTION_KEY;
-import static org.apache.dubbo.registry.Constants.MIGRATION_RULE_STEP_KEY;
-import static org.apache.dubbo.registry.Constants.MIGRATION_RULE_THRESHOLD_KEY;
-
 public class SubMigrationRule {
     private String serviceKey;
     private MigrationStep step;
@@ -36,27 +30,27 @@ public class SubMigrationRule {
         SubMigrationRule interfaceMigrationRule = new SubMigrationRule();
         interfaceMigrationRule.setServiceKey((String) map.get("serviceKey"));
 
-        Object step = map.get(MIGRATION_RULE_STEP_KEY);
+        Object step = map.get("step");
         if (step != null) {
             interfaceMigrationRule.setStep(MigrationStep.valueOf(step.toString()));
         }
 
-        Object threshold = map.get(MIGRATION_RULE_THRESHOLD_KEY);
+        Object threshold = map.get("threshold");
         if (threshold != null) {
             interfaceMigrationRule.setThreshold(Float.valueOf(threshold.toString()));
         }
 
-        Object proportion = map.get(MIGRATION_RULE_PROPORTION_KEY);
+        Object proportion = map.get("proportion");
         if (proportion != null) {
             interfaceMigrationRule.setProportion(Integer.valueOf(proportion.toString()));
         }
 
-        Object delay = map.get(MIGRATION_RULE_DELAY_KEY);
+        Object delay = map.get("delay");
         if (delay != null) {
             interfaceMigrationRule.setDelay(Integer.valueOf(delay.toString()));
         }
 
-        Object force = map.get(MIGRATION_RULE_FORCE_KEY);
+        Object force = map.get("force");
         if (force != null) {
             interfaceMigrationRule.setForce(Boolean.valueOf(force.toString()));
         }

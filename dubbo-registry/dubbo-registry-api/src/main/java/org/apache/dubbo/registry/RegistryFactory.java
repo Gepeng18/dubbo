@@ -20,15 +20,12 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Adaptive;
 import org.apache.dubbo.common.extension.SPI;
 
-import static org.apache.dubbo.common.constants.CommonConstants.PROTOCOL_KEY;
-import static org.apache.dubbo.common.extension.ExtensionScope.APPLICATION;
-
 /**
  * RegistryFactory. (SPI, Singleton, ThreadSafe)
  *
  * @see org.apache.dubbo.registry.support.AbstractRegistryFactory
  */
-@SPI(scope = APPLICATION)
+@SPI("dubbo")
 public interface RegistryFactory {
 
     /**
@@ -45,7 +42,7 @@ public interface RegistryFactory {
      * @param url Registry address, is not allowed to be empty
      * @return Registry reference, never return empty value
      */
-    @Adaptive({PROTOCOL_KEY})
+    @Adaptive({"protocol"})
     Registry getRegistry(URL url);
 
 }

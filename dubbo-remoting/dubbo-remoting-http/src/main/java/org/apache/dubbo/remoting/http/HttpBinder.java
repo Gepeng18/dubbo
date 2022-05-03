@@ -18,14 +18,13 @@ package org.apache.dubbo.remoting.http;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Adaptive;
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.remoting.Constants;
 
 /**
  * HttpBinder
  */
-@SPI(value = "jetty", scope = ExtensionScope.FRAMEWORK)
+@SPI("jetty")
 public interface HttpBinder {
 
     /**

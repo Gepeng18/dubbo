@@ -18,16 +18,9 @@ package org.apache.dubbo.rpc.cluster.governance;
 
 import org.apache.dubbo.common.config.configcenter.ConfigurationListener;
 import org.apache.dubbo.common.config.configcenter.DynamicConfiguration;
-import org.apache.dubbo.rpc.model.ModuleModel;
-import org.apache.dubbo.rpc.model.ScopeModelAware;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
-public class DefaultGovernanceRuleRepositoryImpl implements GovernanceRuleRepository, ScopeModelAware {
-
-    private ModuleModel moduleModel;
-
-    public DefaultGovernanceRuleRepositoryImpl(ModuleModel moduleModel) {
-        this.moduleModel = moduleModel;
-    }
+public class DefaultGovernanceRuleRepositoryImpl implements GovernanceRuleRepository {
 
     @Override
     public void addListener(String key, String group, ConfigurationListener listener) {
@@ -47,15 +40,17 @@ public class DefaultGovernanceRuleRepositoryImpl implements GovernanceRuleReposi
 
     @Override
     public String getRule(String key, String group, long timeout) throws IllegalStateException {
+        // 获取动态配置
         DynamicConfiguration dynamicConfiguration = getDynamicConfiguration();
         if (dynamicConfiguration != null) {
+            // 读取动态配置数据
             return dynamicConfiguration.getConfig(key, group, timeout);
         }
         return null;
     }
 
     private DynamicConfiguration getDynamicConfiguration() {
-        return moduleModel.getModelEnvironment().getDynamicConfiguration().orElse(null);
+        return ApplicationModel.getEnvironment().getDynamicConfiguration().orElse(null);
     }
 
 }

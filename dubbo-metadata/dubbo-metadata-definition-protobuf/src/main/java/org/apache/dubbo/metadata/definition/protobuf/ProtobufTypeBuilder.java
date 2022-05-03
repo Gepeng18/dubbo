@@ -16,18 +16,17 @@
  */
 package org.apache.dubbo.metadata.definition.protobuf;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.ProtocolStringList;
+import com.google.protobuf.UnknownFieldSet;
 import org.apache.dubbo.common.lang.Prioritized;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.metadata.definition.TypeDefinitionBuilder;
 import org.apache.dubbo.metadata.definition.builder.TypeBuilder;
 import org.apache.dubbo.metadata.definition.model.TypeDefinition;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.ProtocolStringList;
-import com.google.protobuf.UnknownFieldSet;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -62,7 +61,7 @@ public class ProtobufTypeBuilder implements TypeBuilder, Prioritized {
     }
 
     @Override
-    public boolean accept(Class<?> clazz) {
+    public boolean accept(Type type, Class<?> clazz) {
         if (clazz == null) {
             return false;
         }

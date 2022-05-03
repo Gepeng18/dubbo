@@ -18,7 +18,6 @@ package org.apache.dubbo.config;
 
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.config.support.Parameter;
-import org.apache.dubbo.rpc.model.ModuleModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +34,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.SERVICE_FILTER_K
  */
 public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
 
-    private static final long serialVersionUID = -9026290350363878309L;
+    private static final long serialVersionUID = 1L;
 
     /**
      * The service version
@@ -101,9 +100,7 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
      */
     protected String protocolIds;
 
-    /**
-     * Max allowed executing times
-     */
+    // max allowed execute times
     private Integer executes;
 
     /**
@@ -123,18 +120,8 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
 
     /**
      * Weather the service is export asynchronously
-     * @deprecated
-     * @see ModuleConfig#exportAsync
      */
-    @Deprecated
     private Boolean exportAsync;
-
-    public AbstractServiceConfig() {
-    }
-
-    public AbstractServiceConfig(ModuleModel moduleModel) {
-        super(moduleModel);
-    }
 
     @Override
     protected void checkDefault() {
@@ -147,22 +134,18 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
         }
     }
 
-    @Override
     public String getVersion() {
         return version;
     }
 
-    @Override
     public void setVersion(String version) {
         this.version = version;
     }
 
-    @Override
     public String getGroup() {
         return group;
     }
 
-    @Override
     public void setGroup(String group) {
         this.group = group;
     }
@@ -323,13 +306,11 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
         this.serialization = serialization;
     }
 
-    @Deprecated
     @Parameter(key = EXPORT_ASYNC_KEY)
     public Boolean getExportAsync() {
         return exportAsync;
     }
 
-    @Deprecated
     public void setExportAsync(Boolean exportAsync) {
         this.exportAsync = exportAsync;
     }

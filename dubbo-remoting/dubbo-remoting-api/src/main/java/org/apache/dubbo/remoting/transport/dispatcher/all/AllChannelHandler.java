@@ -37,7 +37,7 @@ public class AllChannelHandler extends WrappedChannelHandler {
 
     @Override
     public void connected(Channel channel) throws RemotingException {
-        ExecutorService executor = getSharedExecutorService();
+        ExecutorService executor = getExecutorService();
         try {
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.CONNECTED));
         } catch (Throwable t) {
@@ -47,7 +47,7 @@ public class AllChannelHandler extends WrappedChannelHandler {
 
     @Override
     public void disconnected(Channel channel) throws RemotingException {
-        ExecutorService executor = getSharedExecutorService();
+        ExecutorService executor = getExecutorService();
         try {
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.DISCONNECTED));
         } catch (Throwable t) {
@@ -55,10 +55,14 @@ public class AllChannelHandler extends WrappedChannelHandler {
         }
     }
 
+    // 当前类称为请求分发器Dispatcher
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
+        // 线程池
         ExecutorService executor = getPreferredExecutorService(message);
         try {
+            // 将对端请求/响应封装为一个任务
+            // 从线程池中拿到一个线程，来处理这个任务。
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
             if(message instanceof Request && t instanceof RejectedExecutionException){
@@ -71,7 +75,7 @@ public class AllChannelHandler extends WrappedChannelHandler {
 
     @Override
     public void caught(Channel channel, Throwable exception) throws RemotingException {
-        ExecutorService executor = getSharedExecutorService();
+        ExecutorService executor = getExecutorService();
         try {
             executor.execute(new ChannelEventRunnable(channel, handler, ChannelState.CAUGHT, exception));
         } catch (Throwable t) {

@@ -38,7 +38,9 @@ public class InterfaceCompatibleRegistryProtocol extends RegistryProtocol {
     protected URL getRegistryUrl(Invoker<?> originInvoker) {
         URL registryUrl = originInvoker.getUrl();
         if (REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
+            // 获取regsitry属性值，这里的值为zookeeper
             String protocol = registryUrl.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY);
+            // 将URL中的protocol由registry替换为zookeeper，并将registry属性删除
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(REGISTRY_KEY);
         }
         return registryUrl;
@@ -54,18 +56,19 @@ public class InterfaceCompatibleRegistryProtocol extends RegistryProtocol {
 
     @Override
     public <T> ClusterInvoker<T> getInvoker(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        // 创建了一个动态列表
         DynamicDirectory<T> directory = new RegistryDirectory<>(type, url);
+        // 创建invoker
         return doCreateInvoker(directory, cluster, registry, type);
     }
 
     @Override
     public <T> ClusterInvoker<T> getServiceDiscoveryInvoker(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        registry = getRegistry(super.getRegistryUrl(url));
+        registry = registryFactory.getRegistry(super.getRegistryUrl(url));
         DynamicDirectory<T> directory = new ServiceDiscoveryRegistryDirectory<>(type, url);
         return doCreateInvoker(directory, cluster, registry, type);
     }
 
-    @Override
     protected <T> ClusterInvoker<T> getMigrationInvoker(RegistryProtocol registryProtocol, Cluster cluster, Registry registry, Class<T> type, URL url, URL consumerUrl) {
 //        ClusterInvoker<T> invoker = getInvoker(cluster, registry, type, url);
         return new MigrationInvoker<T>(registryProtocol, cluster, registry, type, url, consumerUrl);

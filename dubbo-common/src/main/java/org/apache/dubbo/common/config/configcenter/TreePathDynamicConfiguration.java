@@ -61,7 +61,7 @@ public abstract class TreePathDynamicConfiguration extends AbstractDynamicConfig
      */
     public static final String DEFAULT_CONFIG_BASE_PATH = "/config";
 
-    protected final String rootPath;
+    private final String rootPath;
 
     public TreePathDynamicConfiguration(URL url) {
         super(url);
@@ -80,6 +80,7 @@ public abstract class TreePathDynamicConfiguration extends AbstractDynamicConfig
 
     @Override
     protected final String doGetConfig(String key, String group) throws Exception {
+        // 构建出要读取配置节点名称
         String pathKey = buildPathKey(group, key);
         return doGetConfig(pathKey);
     }

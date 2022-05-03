@@ -16,10 +16,11 @@
  */
 package org.apache.dubbo.common.convert;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.common.lang.Prioritized;
 
+import static org.apache.dubbo.common.extension.ExtensionLoader.getExtensionLoader;
 import static org.apache.dubbo.common.utils.ClassUtils.isAssignableFrom;
 import static org.apache.dubbo.common.utils.TypeUtils.findActualTypeArgument;
 
@@ -30,7 +31,7 @@ import static org.apache.dubbo.common.utils.TypeUtils.findActualTypeArgument;
  * @param <T> The target type
  * @since 2.7.6
  */
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 @FunctionalInterface
 public interface Converter<S, T> extends Prioritized {
 
@@ -69,5 +70,39 @@ public interface Converter<S, T> extends Prioritized {
      */
     default Class<T> getTargetType() {
         return findActualTypeArgument(getClass(), Converter.class, 1);
+    }
+
+    /**
+     * Get the Converter instance from {@link ExtensionLoader} with the specified source and target type
+     *
+     * @param sourceType the source type
+     * @param targetType the target type
+     * @return
+     * @see ExtensionLoader#getSupportedExtensionInstances()
+     */
+    static Converter<?, ?> getConverter(Class<?> sourceType, Class<?> targetType) {
+        return getExtensionLoader(Converter.class)
+                .getSupportedExtensionInstances()
+                .stream()
+                .filter(converter -> converter.accept(sourceType, targetType))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Convert the value of source to target-type value if possible
+     *
+     * @param source     the value of source
+     * @param targetType the target type
+     * @param <T>        the target type
+     * @return <code>null</code> if can't be converted
+     * @since 2.7.8
+     */
+    static <T> T convertIfPossible(Object source, Class<T> targetType) {
+        Converter converter = getConverter(source.getClass(), targetType);
+        if (converter != null) {
+            return (T) converter.convert(source);
+        }
+        return null;
     }
 }

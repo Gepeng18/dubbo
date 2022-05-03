@@ -17,59 +17,60 @@
 
 package org.apache.dubbo.rpc.cluster.router.mesh.rule.virtualservice.match;
 
-import org.apache.dubbo.rpc.Invocation;
-import org.apache.dubbo.rpc.cluster.router.mesh.util.TracingContextProvider;
-
 import java.util.Map;
-import java.util.Set;
 
 
 public class DubboAttachmentMatch {
-    private Map<String, StringMatch> tracingContext;
-    private Map<String, StringMatch> dubboContext;
+    private Map<String, StringMatch> eagleeyecontext;
+    private Map<String, StringMatch> dubbocontext;
 
-    public Map<String, StringMatch> getTracingContext() {
-        return tracingContext;
+    public Map<String, StringMatch> getEagleeyecontext() {
+        return eagleeyecontext;
     }
 
-    public void setTracingContext(Map<String, StringMatch> tracingContext) {
-        this.tracingContext = tracingContext;
+    public void setEagleeyecontext(Map<String, StringMatch> eagleeyecontext) {
+        this.eagleeyecontext = eagleeyecontext;
     }
 
-    public Map<String, StringMatch> getDubboContext() {
-        return dubboContext;
+    public Map<String, StringMatch> getDubbocontext() {
+        return dubbocontext;
     }
 
-    public void setDubboContext(Map<String, StringMatch> dubboContext) {
-        this.dubboContext = dubboContext;
+    public void setDubbocontext(Map<String, StringMatch> dubbocontext) {
+        this.dubbocontext = dubbocontext;
     }
 
-    public boolean isMatch(Invocation invocation, Set<TracingContextProvider> contextProviders) {
-        // Match Dubbo Context
-        if (dubboContext != null) {
-            for (Map.Entry<String, StringMatch> entry : dubboContext.entrySet()) {
-                String key = entry.getKey();
-                if(!entry.getValue().isMatch(invocation.getAttachment(key))) {
+    public static boolean isMatch(DubboAttachmentMatch dubboAttachmentMatch, Map<String, String> eagleeyeContext, Map<String, String> dubboContext) {
+        if (dubboAttachmentMatch.getDubbocontext() != null) {
+            for (Map.Entry<String, StringMatch> stringStringMatchEntry : dubboAttachmentMatch.getDubbocontext().entrySet()) {
+                String key = stringStringMatchEntry.getKey();
+                StringMatch stringMatch = stringStringMatchEntry.getValue();
+
+                String dubboContextValue = dubboContext.get(key);
+                if (dubboContextValue == null) {
+                    return false;
+                }
+                if (!StringMatch.isMatch(stringMatch, dubboContextValue)) {
                     return false;
                 }
             }
         }
 
-        // Match Tracing Context
-        if (tracingContext != null) {
-            for (Map.Entry<String, StringMatch> entry : tracingContext.entrySet()) {
-                String key = entry.getKey();
-                boolean match = false;
-                for (TracingContextProvider contextProvider : contextProviders) {
-                    if (entry.getValue().isMatch(contextProvider.getValue(invocation, key))) {
-                        match = true;
-                    }
+        if (dubboAttachmentMatch.getEagleeyecontext() != null) {
+            for (Map.Entry<String, StringMatch> stringStringMatchEntry : dubboAttachmentMatch.getEagleeyecontext().entrySet()) {
+                String key = stringStringMatchEntry.getKey();
+                StringMatch stringMatch = stringStringMatchEntry.getValue();
+
+                String eagleeyeContextValue = eagleeyeContext.get(key);
+                if (eagleeyeContextValue == null) {
+                    return false;
                 }
-                if (!match) {
+                if (!StringMatch.isMatch(stringMatch, eagleeyeContextValue)) {
                     return false;
                 }
             }
         }
+
         return true;
     }
 }

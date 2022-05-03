@@ -34,6 +34,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class ClientToServerTest {
 
+    protected static final String LOCALHOST = "127.0.0.1";
+
     protected ExchangeServer server;
 
     protected ExchangeChannel client;

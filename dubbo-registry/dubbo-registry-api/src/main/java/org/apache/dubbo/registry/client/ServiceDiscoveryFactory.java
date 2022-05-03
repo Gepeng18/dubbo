@@ -20,7 +20,7 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.extension.SPI;
 
-import static org.apache.dubbo.common.extension.ExtensionScope.APPLICATION;
+import static org.apache.dubbo.common.extension.ExtensionLoader.getExtensionLoader;
 
 /**
  * The factory to create {@link ServiceDiscovery}
@@ -28,14 +28,13 @@ import static org.apache.dubbo.common.extension.ExtensionScope.APPLICATION;
  * @see ServiceDiscovery
  * @since 2.7.5
  */
-@SPI(value = "default", scope = APPLICATION)
+@SPI("default")
 public interface ServiceDiscoveryFactory {
 
     /**
      * Get the instance of {@link ServiceDiscovery}
      *
      * @param registryURL the {@link URL} to connect the registry
-     * @param model, the application model context
      * @return non-null
      */
     ServiceDiscovery getServiceDiscovery(URL registryURL);
@@ -48,7 +47,7 @@ public interface ServiceDiscoveryFactory {
      */
     static ServiceDiscoveryFactory getExtension(URL registryURL) {
         String protocol = registryURL.getProtocol();
-        ExtensionLoader<ServiceDiscoveryFactory> loader = registryURL.getOrDefaultApplicationModel().getExtensionLoader(ServiceDiscoveryFactory.class);
+        ExtensionLoader<ServiceDiscoveryFactory> loader = getExtensionLoader(ServiceDiscoveryFactory.class);
         return loader.getOrDefaultExtension(protocol);
     }
 }

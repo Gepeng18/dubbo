@@ -20,11 +20,10 @@ import org.apache.dubbo.config.ReferenceConfigBase;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
 import org.apache.dubbo.config.spring.ReferenceBean;
+import org.apache.dubbo.config.spring.ZooKeeperServer;
 import org.apache.dubbo.config.spring.api.HelloService;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.apache.dubbo.rpc.model.ApplicationModel;
-
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,24 +48,21 @@ import java.util.Map;
 public class Issue7003Test {
 
     @BeforeAll
-    public static void beforeAll() {
-        DubboBootstrap.reset();
-    }
-
-    @AfterAll
-    public static void afterAll() {
+    public static void setUp() {
         DubboBootstrap.reset();
     }
 
     @Test
     public void test() throws Exception {
+        ZooKeeperServer.start();
+
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Issue7003Test.class);
         try {
 
             Map<String, ReferenceBean> referenceBeanMap = context.getBeansOfType(ReferenceBean.class);
             Assertions.assertEquals(1, referenceBeanMap.size());
 
-            Collection<ReferenceConfigBase<?>> references = ApplicationModel.defaultModel().getDefaultModule().getConfigManager().getReferences();
+            Collection<ReferenceConfigBase<?>> references = ApplicationModel.getConfigManager().getReferences();
             Assertions.assertEquals(1, references.size());
 
         } finally {

@@ -19,12 +19,11 @@ package org.apache.dubbo.config.spring.beans.factory.annotation;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.Method;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.config.spring.ZooKeeperServer;
 import org.apache.dubbo.config.spring.api.HelloService;
 import org.apache.dubbo.config.spring.api.MethodCallback;
 import org.apache.dubbo.config.spring.context.annotation.provider.ProviderConfiguration;
 import org.apache.dubbo.config.spring.impl.MethodCallbackImpl;
-
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -48,77 +47,35 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         })
 @TestPropertySource(properties = {
     "dubbo.protocol.port=-1",
-    "dubbo.registry.address=${zookeeper.connection.address}"
+    "dubbo.registry.address=zookeeper://127.0.0.1:2181"
 })
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class MethodConfigCallbackTest {
 
     @BeforeAll
-    public static void beforeAll() {
+    public static void setUp() {
         DubboBootstrap.reset();
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        DubboBootstrap.reset();
+        ZooKeeperServer.start();
     }
 
     @Autowired
     private ConfigurableApplicationContext context;
 
-    @DubboReference(check = false, async = true,
-        injvm = false, // Currently, local call is not supported method callback cause by Injvm protocol is not supported ClusterFilter
+    @DubboReference(check = false,
+        injvm = false, // Currently local call is not supported method callback cause by Injvm protocol is not supported ClusterFilter
         methods = {@Method(name = "sayHello",
-        oninvoke = "methodCallback.oninvoke1",
-        onreturn = "methodCallback.onreturn1",
-        onthrow = "methodCallback.onthrow1")})
+        oninvoke = "methodCallback.oninvoke",
+        onreturn = "methodCallback.onreturn",
+        onthrow = "methodCallback.onthrow")})
     private HelloService helloServiceMethodCallBack;
-
-    @DubboReference(check = false, async = true,
-            injvm = false, // Currently, local call is not supported method callback cause by Injvm protocol is not supported ClusterFilter
-            methods = {@Method(name = "sayHello",
-            oninvoke = "methodCallback.oninvoke2",
-            onreturn = "methodCallback.onreturn2",
-            onthrow = "methodCallback.onthrow2")})
-    private HelloService helloServiceMethodCallBack2;
 
     @Test
     public void testMethodAnnotationCallBack() {
-        int threadCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
-        int callCnt = 2 * threadCnt;
-        for (int i = 0; i < threadCnt; i++) {
-            new Thread(() -> {
-                for (int j = 0; j < callCnt; j++) {
-                    helloServiceMethodCallBack.sayHello("dubbo");
-                    helloServiceMethodCallBack2.sayHello("dubbo(2)");
-                }
-            }).start();
-        }
-        int i = 0;
-        while (MethodCallbackImpl.cnt.get() < ( 2 * threadCnt * callCnt)){
-            // wait for async callback finished
-            try {
-                i++;
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
+        helloServiceMethodCallBack.sayHello("dubbo");
         MethodCallback notify = (MethodCallback) context.getBean("methodCallback");
-        StringBuilder invoke1Builder = new StringBuilder();
-        StringBuilder invoke2Builder = new StringBuilder();
-        StringBuilder return1Builder = new StringBuilder();
-        StringBuilder return2Builder = new StringBuilder();
-        for (i = 0; i < threadCnt * callCnt; i++) {
-            invoke1Builder.append("dubbo invoke success!");
-            invoke2Builder.append("dubbo invoke success(2)!");
-            return1Builder.append("dubbo return success!");
-            return2Builder.append("dubbo return success(2)!");
-        }
-        Assertions.assertEquals(invoke1Builder.toString(), notify.getOnInvoke1());
-        Assertions.assertEquals(return1Builder.toString(), notify.getOnReturn1());
-        Assertions.assertEquals(invoke2Builder.toString(), notify.getOnInvoke2());
-        Assertions.assertEquals(return2Builder.toString(), notify.getOnReturn2());
+        Assertions.assertEquals("dubbo invoke success", notify.getOnInvoke());
+        Assertions.assertEquals("dubbo return success", notify.getOnReturn());
     }
 
     @Configuration

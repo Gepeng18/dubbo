@@ -16,11 +16,10 @@
  */
 package com.alibaba.dubbo.common.extension;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 @Deprecated
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 public interface ExtensionFactory extends org.apache.dubbo.common.extension.ExtensionFactory {
 
 }

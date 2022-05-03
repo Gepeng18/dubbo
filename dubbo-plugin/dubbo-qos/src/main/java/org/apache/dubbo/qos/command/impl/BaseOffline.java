@@ -16,34 +16,31 @@
  */
 package org.apache.dubbo.qos.command.impl;
 
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.utils.ArrayUtils;
 import org.apache.dubbo.qos.command.BaseCommand;
 import org.apache.dubbo.qos.command.CommandContext;
 import org.apache.dubbo.registry.Registry;
 import org.apache.dubbo.registry.RegistryFactory;
-import org.apache.dubbo.rpc.model.FrameworkModel;
-import org.apache.dubbo.rpc.model.FrameworkServiceRepository;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.ProviderModel;
 import org.apache.dubbo.rpc.model.ServiceMetadata;
+import org.apache.dubbo.rpc.model.ServiceRepository;
 
 import java.util.Collection;
 import java.util.List;
 
 public class BaseOffline implements BaseCommand {
-    private Logger logger = LoggerFactory.getLogger(BaseOffline.class);
-    public FrameworkServiceRepository serviceRepository;
-
-    public BaseOffline(FrameworkModel frameworkModel) {
-        this.serviceRepository = frameworkModel.getServiceRepository();
-    }
+    private Logger logger = LoggerFactory.getLogger(OfflineInterface.class);
+    public static RegistryFactory registryFactory = ExtensionLoader.getExtensionLoader(RegistryFactory.class).getAdaptiveExtension();
+    public static ServiceRepository serviceRepository = ApplicationModel.getServiceRepository();
 
     @Override
     public String execute(CommandContext commandContext, String[] args) {
         logger.info("receive offline command");
         String servicePattern = ".*";
-        if (ArrayUtils.isNotEmpty(args)) {
+        if (args != null && args.length > 0) {
             servicePattern = args[0];
         }
 
@@ -63,7 +60,7 @@ public class BaseOffline implements BaseCommand {
     public boolean offline(String servicePattern) {
         boolean hasService = false;
 
-        Collection<ProviderModel> providerModelList = serviceRepository.allProviderModels();
+        Collection<ProviderModel> providerModelList = serviceRepository.getExportedServices();
         for (ProviderModel providerModel : providerModelList) {
             ServiceMetadata metadata = providerModel.getServiceMetadata();
             if (metadata.getServiceKey().matches(servicePattern) || metadata.getDisplayServiceKey().matches(servicePattern)) {
@@ -81,8 +78,6 @@ public class BaseOffline implements BaseCommand {
     }
 
     protected void doUnexport(ProviderModel.RegisterStatedURL statedURL) {
-        RegistryFactory registryFactory =
-            statedURL.getRegistryUrl().getOrDefaultApplicationModel().getExtensionLoader(RegistryFactory.class).getAdaptiveExtension();
         Registry registry = registryFactory.getRegistry(statedURL.getRegistryUrl());
         registry.unregister(statedURL.getProviderUrl());
         statedURL.setRegistered(false);

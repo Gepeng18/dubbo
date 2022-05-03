@@ -16,6 +16,8 @@
  */
 package org.apache.dubbo.common;
 
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.url.component.ServiceConfigURL;
 import org.apache.dubbo.common.url.component.URLItemCache;
 
@@ -29,6 +31,7 @@ import static org.apache.dubbo.common.utils.StringUtils.decodeHexByte;
 import static org.apache.dubbo.common.utils.Utf8Utils.decodeUtf8;
 
 public final class URLStrParser {
+    private static final Logger logger = LoggerFactory.getLogger(URLStrParser.class);
     public static final String ENCODED_QUESTION_MARK = "%3F";
     public static final String ENCODED_TIMESTAMP_KEY = "timestamp%3D";
     public static final String ENCODED_PID_KEY = "pid%3D";
@@ -41,13 +44,16 @@ public final class URLStrParser {
         //empty
     }
 
+    public static URL parseDecodedStr(String decodedURLStr) {
+        return parseDecodedStr(decodedURLStr, false);
+    }
 
     /**
      * @param decodedURLStr : after {@link URL#decode} string
      *                      decodedURLStr format: protocol://username:password@host:port/path?k1=v1&k2=v2
      *                      [protocol://][username:password@][host:port]/[path][?k1=v1&k2=v2]
      */
-    public static URL parseDecodedStr(String decodedURLStr) {
+    public static URL parseDecodedStr(String decodedURLStr, boolean modifiable) {
         Map<String, String> parameters = null;
         int pathEndIdx = decodedURLStr.indexOf('?');
         if (pathEndIdx >= 0) {
@@ -57,7 +63,7 @@ public final class URLStrParser {
         }
 
         String decodedBody = decodedURLStr.substring(0, pathEndIdx);
-        return parseURLBody(decodedURLStr, decodedBody, parameters);
+        return parseURLBody(decodedURLStr, decodedBody, parameters, modifiable);
     }
 
     private static Map<String, String> parseDecodedParams(String str, int from) {
@@ -100,7 +106,7 @@ public final class URLStrParser {
      * @param parameters  :
      * @return URL
      */
-    private static URL parseURLBody(String fullURLStr, String decodedBody, Map<String, String> parameters) {
+    private static URL parseURLBody(String fullURLStr, String decodedBody, Map<String, String> parameters, boolean modifiable) {
         int starIdx = 0, endIdx = decodedBody.length();
         // ignore the url content following '#'
         int poundIndex = decodedBody.indexOf('#');
@@ -175,6 +181,10 @@ public final class URLStrParser {
         return new ServiceConfigURL(protocol, username, password, host, port, path, parameters);
     }
 
+    public static URL parseEncodedStr(String encodedURLStr) {
+        return parseEncodedStr(encodedURLStr, false);
+    }
+
     public static String[] parseRawURLToArrays(String rawURLStr, int pathEndIdx) {
         String[] parts = new String[2];
         int paramStartIdx = pathEndIdx + 3;//skip ENCODED_QUESTION_MARK
@@ -208,7 +218,7 @@ public final class URLStrParser {
      *                      encodedURLStr after decode format: protocol://username:password@host:port/path?k1=v1&k2=v2
      *                      [protocol://][username:password@][host:port]/[path][?k1=v1&k2=v2]
      */
-    public static URL parseEncodedStr(String encodedURLStr) {
+    public static URL parseEncodedStr(String encodedURLStr, boolean modifiable) {
         Map<String, String> parameters = null;
         int pathEndIdx = encodedURLStr.toUpperCase().indexOf("%3F");// '?'
         if (pathEndIdx >= 0) {
@@ -219,7 +229,7 @@ public final class URLStrParser {
 
         //decodedBody format: [protocol://][username:password@][host:port]/[path]
         String decodedBody = decodeComponent(encodedURLStr, 0, pathEndIdx, false, DECODE_TEMP_BUF.get());
-        return parseURLBody(encodedURLStr, decodedBody, parameters);
+        return parseURLBody(encodedURLStr, decodedBody, parameters, modifiable);
     }
 
     private static Map<String, String> parseEncodedParams(String str, int from) {
@@ -277,7 +287,7 @@ public final class URLStrParser {
         if (isEncoded) {
             String name = decodeComponent(str, nameStart, valueStart - 3, false, tempBuf);
             String value;
-            if (valueStart >= valueEnd) {
+            if (valueStart == valueEnd) {
                 value = name;
             } else {
                 value = decodeComponent(str, valueStart, valueEnd, false, tempBuf);
@@ -290,7 +300,7 @@ public final class URLStrParser {
         } else {
             String name = str.substring(nameStart, valueStart - 1);
             String value;
-            if (valueStart >= valueEnd) {
+            if (valueStart == valueEnd) {
                 value = name;
             } else {
                 value = str.substring(valueStart, valueEnd);

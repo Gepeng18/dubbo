@@ -18,7 +18,6 @@ package org.apache.dubbo.remoting.exchange;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Adaptive;
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.remoting.Constants;
 import org.apache.dubbo.remoting.RemotingException;
@@ -30,7 +29,7 @@ import org.apache.dubbo.remoting.exchange.support.header.HeaderExchanger;
  * <a href="http://en.wikipedia.org/wiki/Message_Exchange_Pattern">Message Exchange Pattern</a>
  * <a href="http://en.wikipedia.org/wiki/Request-response">Request-Response</a>
  */
-@SPI(value = HeaderExchanger.NAME, scope = ExtensionScope.FRAMEWORK)
+@SPI(HeaderExchanger.NAME)
 public interface Exchanger {
 
     /**

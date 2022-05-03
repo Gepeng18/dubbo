@@ -18,8 +18,8 @@ package org.apache.dubbo.registry.multiple;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.constants.CommonConstants;
-import org.apache.dubbo.metadata.MetadataInfo;
-import org.apache.dubbo.registry.NotifyListener;
+import org.apache.dubbo.common.utils.DefaultPage;
+import org.apache.dubbo.common.utils.Page;
 import org.apache.dubbo.registry.client.ServiceDiscovery;
 import org.apache.dubbo.registry.client.ServiceDiscoveryFactory;
 import org.apache.dubbo.registry.client.ServiceInstance;
@@ -36,23 +36,24 @@ import java.util.function.Function;
 
 public class MultipleServiceDiscovery implements ServiceDiscovery {
     public static final String REGISTRY_PREFIX_KEY = "child.";
-    private static final String REGISTRY_TYPE = "registry-type";
-    private static final String SERVICE = "service";
     private final Map<String, ServiceDiscovery> serviceDiscoveries = new ConcurrentHashMap<>();
     private URL registryURL;
+    private ServiceInstance serviceInstance;
     private String applicationName;
     private volatile boolean isDestroy;
 
-    public MultipleServiceDiscovery(URL registryURL) {
+    @Override
+    public void initialize(URL registryURL) throws Exception {
         this.registryURL = registryURL;
-        this.applicationName = registryURL.getApplication();
+        this.applicationName = registryURL.getParameter(CommonConstants.APPLICATION_KEY);
 
         Map<String, String> parameters = registryURL.getParameters();
         for (String key : parameters.keySet()) {
             if (key.startsWith(REGISTRY_PREFIX_KEY)) {
                 URL url = URL.valueOf(registryURL.getParameter(key)).addParameter(CommonConstants.APPLICATION_KEY, applicationName)
-                    .addParameter(REGISTRY_TYPE, SERVICE);
+                        .addParameter("registry-type", "service");
                 ServiceDiscovery serviceDiscovery = ServiceDiscoveryFactory.getExtension(url).getServiceDiscovery(url);
+                serviceDiscovery.initialize(url);
                 serviceDiscoveries.put(key, serviceDiscovery);
             }
         }
@@ -77,29 +78,30 @@ public class MultipleServiceDiscovery implements ServiceDiscovery {
     }
 
     @Override
-    public void register() throws RuntimeException {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.register());
+    public void register(ServiceInstance serviceInstance) throws RuntimeException {
+        this.serviceInstance = serviceInstance;
+        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.register(serviceInstance));
     }
 
     @Override
-    public void update() throws RuntimeException {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.update());
+    public void update(ServiceInstance serviceInstance) throws RuntimeException {
+        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.update(serviceInstance));
     }
 
     @Override
-    public void unregister() throws RuntimeException {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.unregister());
+    public void unregister(ServiceInstance serviceInstance) throws RuntimeException {
+        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.unregister(serviceInstance));
     }
 
     @Override
-    public void addServiceInstancesChangedListener(ServiceInstancesChangedListener listener)
-        throws NullPointerException, IllegalArgumentException {
+    public void addServiceInstancesChangedListener(ServiceInstancesChangedListener listener) throws NullPointerException, IllegalArgumentException {
         MultiServiceInstancesChangedListener multiListener = (MultiServiceInstancesChangedListener) listener;
 
         for (String registryKey : serviceDiscoveries.keySet()) {
             ServiceDiscovery serviceDiscovery = serviceDiscoveries.get(registryKey);
-            SingleServiceInstancesChangedListener singleListener = multiListener.getAndComputeIfAbsent(registryKey, k ->
-                new SingleServiceInstancesChangedListener(listener.getServiceNames(), serviceDiscovery, multiListener));
+            SingleServiceInstancesChangedListener singleListener = multiListener.getAndComputeIfAbsent(registryKey, k -> {
+                return new SingleServiceInstancesChangedListener(listener.getServiceNames(), serviceDiscovery, multiListener);
+            });
             serviceDiscovery.addServiceInstancesChangedListener(singleListener);
         }
     }
@@ -110,12 +112,15 @@ public class MultipleServiceDiscovery implements ServiceDiscovery {
     }
 
     @Override
-    public List<ServiceInstance> getInstances(String serviceName) {
+    public Page<ServiceInstance> getInstances(String serviceName, int offset, int pageSize, boolean healthyOnly) throws NullPointerException, IllegalArgumentException, UnsupportedOperationException {
+
         List<ServiceInstance> serviceInstanceList = new ArrayList<>();
         for (ServiceDiscovery serviceDiscovery : serviceDiscoveries.values()) {
-            serviceInstanceList.addAll(serviceDiscovery.getInstances(serviceName));
+            Page<ServiceInstance> serviceInstancePage = serviceDiscovery.getInstances(serviceName, offset, pageSize, healthyOnly);
+            serviceInstanceList.addAll(serviceInstancePage.getData());
         }
-        return serviceInstanceList;
+
+        return new DefaultPage<>(offset, pageSize, serviceInstanceList, serviceInstanceList.size());
     }
 
     @Override
@@ -129,47 +134,7 @@ public class MultipleServiceDiscovery implements ServiceDiscovery {
 
     @Override
     public ServiceInstance getLocalInstance() {
-        return null;
-    }
-
-    @Override
-    public MetadataInfo getLocalMetadata() {
-        throw new UnsupportedOperationException("Multiple registry implementation does not support getMetadata() method.");
-    }
-
-    @Override
-    public MetadataInfo getRemoteMetadata(String revision) {
-        throw new UnsupportedOperationException("Multiple registry implementation does not support getMetadata() method.");
-    }
-
-    @Override
-    public MetadataInfo getRemoteMetadata(String revision, List<ServiceInstance> instances) {
-        throw new UnsupportedOperationException("Multiple registry implementation does not support getMetadata() method.");
-    }
-
-    @Override
-    public void register(URL url) {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.register(url));
-    }
-
-    @Override
-    public void unregister(URL url) {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.unregister(url));
-    }
-
-    @Override
-    public void subscribe(URL url, NotifyListener listener) {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.subscribe(url, listener));
-    }
-
-    @Override
-    public void unsubscribe(URL url, NotifyListener listener) {
-        serviceDiscoveries.values().forEach(serviceDiscovery -> serviceDiscovery.unsubscribe(url, listener));
-    }
-
-    @Override
-    public List<URL> lookup(URL url) {
-        throw new UnsupportedOperationException("Multiple registry implementation does not support lookup() method.");
+        return serviceInstance;
     }
 
     protected static class MultiServiceInstancesChangedListener extends ServiceInstancesChangedListener {
@@ -200,8 +165,7 @@ public class MultipleServiceDiscovery implements ServiceDiscovery {
             singleListenerMap.put(registryKey, singleListener);
         }
 
-        public SingleServiceInstancesChangedListener getAndComputeIfAbsent(String registryKey,
-                                                                           Function<String, SingleServiceInstancesChangedListener> func) {
+        public SingleServiceInstancesChangedListener getAndComputeIfAbsent(String registryKey, Function<String, SingleServiceInstancesChangedListener> func) {
             return singleListenerMap.computeIfAbsent(registryKey, func);
         }
     }
@@ -210,8 +174,7 @@ public class MultipleServiceDiscovery implements ServiceDiscovery {
         private final MultiServiceInstancesChangedListener multiListener;
         volatile ServiceInstancesChangedEvent event;
 
-        public SingleServiceInstancesChangedListener(Set<String> serviceNames, ServiceDiscovery serviceDiscovery,
-                                                     MultiServiceInstancesChangedListener multiListener) {
+        public SingleServiceInstancesChangedListener(Set<String> serviceNames, ServiceDiscovery serviceDiscovery, MultiServiceInstancesChangedListener multiListener) {
             super(serviceNames, serviceDiscovery);
             this.multiListener = multiListener;
         }

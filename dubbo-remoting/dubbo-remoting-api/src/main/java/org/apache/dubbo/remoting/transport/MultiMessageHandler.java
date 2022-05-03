@@ -20,6 +20,7 @@ import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.remoting.ChannelHandler;
+import org.apache.dubbo.remoting.ExecutionException;
 import org.apache.dubbo.remoting.RemotingException;
 import org.apache.dubbo.remoting.exchange.support.MultiMessage;
 
@@ -37,18 +38,14 @@ public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
     @SuppressWarnings("unchecked")
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
-        if (message instanceof MultiMessage) {
+        if (message instanceof MultiMessage) {  // 判断请求是否为multipart请求
             MultiMessage list = (MultiMessage) message;
             for (Object obj : list) {
                 try {
                     handler.received(channel, obj);
-                } catch (Throwable t) {
-                    logger.error("MultiMessageHandler received fail.", t);
-                    try {
-                        handler.caught(channel, t);
-                    } catch (Throwable t1) {
-                        logger.error("MultiMessageHandler caught fail.", t1);
-                    }
+                } catch (ExecutionException e) {
+                    logger.error("MultiMessageHandler received fail.", e);
+                    handler.caught(channel, e);
                 }
             }
         } else {

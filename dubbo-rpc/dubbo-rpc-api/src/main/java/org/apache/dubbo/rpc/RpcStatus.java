@@ -279,6 +279,7 @@ public class RpcStatus {
      * @return succeeded elapsed
      */
     public long getSucceededElapsed() {
+        // 当前invoker的所有响应时间和 - 当前invoker的所有异常响应时间和
         return getTotalElapsed() - getFailedElapsed();
     }
 
@@ -288,10 +289,12 @@ public class RpcStatus {
      * @return succeeded average elapsed
      */
     public long getSucceededAverageElapsed() {
+        // 获取当前invoker成功响应的次数
         long succeeded = getSucceeded();
         if (succeeded == 0) {
             return 0;
         }
+        // 当前invoker的所有成功响应时间和 / 次数
         return getSucceededElapsed() / succeeded;
     }
 

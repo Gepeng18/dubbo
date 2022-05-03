@@ -14,79 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.dubbo.config;
 
-import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.common.utils.UrlUtils;
-import org.apache.dubbo.config.nested.AggregationConfig;
-import org.apache.dubbo.config.nested.PrometheusConfig;
-import org.apache.dubbo.config.support.Nested;
-import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.config.support.Parameter;
 
-import java.util.HashMap;
-import java.util.Map;
+import static org.apache.dubbo.common.constants.CommonConstants.METRICS_PORT;
+import static org.apache.dubbo.common.constants.CommonConstants.METRICS_PROTOCOL;
 
-import static org.apache.dubbo.common.constants.CommonConstants.PROTOCOL_KEY;
-import static org.apache.dubbo.common.constants.MetricsConstants.PROTOCOL_PROMETHEUS;
-
-/**
- * MetricsConfig
- */
 public class MetricsConfig extends AbstractConfig {
 
     private static final long serialVersionUID = -9089919311611546383L;
 
-    private String protocol;
-
-    /**
-     * @deprecated After metrics config is refactored.
-     * This parameter should no longer use and will be deleted in the future.
-     */
-    @Deprecated
     private String port;
-
-    /**
-     * The prometheus metrics config
-     */
-    @Nested
-    private PrometheusConfig prometheus;
-
-    /**
-     * The metrics aggregation config
-     */
-    @Nested
-    private AggregationConfig aggregation;
+    private String protocol;
 
     public MetricsConfig() {
     }
 
-    public MetricsConfig(ApplicationModel applicationModel) {
-        super(applicationModel);
-    }
-
-    public URL toUrl() {
-        Map<String, String> map = new HashMap<>();
-        appendParameters(map, this);
-
-        // use 'prometheus' as the default metrics service.
-        if (StringUtils.isEmpty(map.get(PROTOCOL_KEY))) {
-            map.put(PROTOCOL_KEY, PROTOCOL_PROMETHEUS);
-        }
-
-        // ignore address parameter, use specified url in each metrics server config
-        // the address "localhost" here is meaningless
-        return UrlUtils.parseURL("localhost", map);
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
-    }
-
+    @Parameter(key = METRICS_PORT)
     public String getPort() {
         return port;
     }
@@ -95,20 +41,13 @@ public class MetricsConfig extends AbstractConfig {
         this.port = port;
     }
 
-    public PrometheusConfig getPrometheus() {
-        return prometheus;
+    @Parameter(key = METRICS_PROTOCOL)
+    public String getProtocol() {
+        return protocol;
     }
 
-    public void setPrometheus(PrometheusConfig prometheus) {
-        this.prometheus = prometheus;
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
 
-    public AggregationConfig getAggregation() {
-        return aggregation;
-    }
-
-    public void setAggregation(AggregationConfig aggregation) {
-        this.aggregation = aggregation;
-    }
 }
-

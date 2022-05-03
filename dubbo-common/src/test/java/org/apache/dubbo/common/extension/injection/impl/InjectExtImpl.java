@@ -19,7 +19,6 @@ package org.apache.dubbo.common.extension.injection.impl;
 import org.apache.dubbo.common.extension.DisableInject;
 import org.apache.dubbo.common.extension.ext1.SimpleExt;
 import org.apache.dubbo.common.extension.injection.InjectExt;
-import org.apache.dubbo.common.extension.wrapper.Demo;
 
 public class InjectExtImpl implements InjectExt {
 
@@ -28,8 +27,6 @@ public class InjectExtImpl implements InjectExt {
     private SimpleExt simpleExt1;
 
     private Object genericType;
-
-    private Demo demo;
 
     public void setSimpleExt(SimpleExt simpleExt) {
         this.simpleExt = simpleExt;
@@ -59,13 +56,5 @@ public class InjectExtImpl implements InjectExt {
 
     public Object getGenericType() {
         return genericType;
-    }
-
-    public Demo getDemo() {
-        return demo;
-    }
-
-    public void setDemo(Demo demo) {
-        this.demo = demo;
     }
 }

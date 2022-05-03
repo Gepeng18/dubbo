@@ -29,13 +29,14 @@ public class DubboExporter<T> extends AbstractExporter<T> {
 
     private final String key;
 
+    // map的key格式  group/interface:version
+    // 例如，greeting/org.apache.dubbo.demo.GreetingService:1.0.0
     private final Map<String, Exporter<?>> exporterMap;
 
     public DubboExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap) {
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
-        exporterMap.put(key, this);
     }
 
     @Override

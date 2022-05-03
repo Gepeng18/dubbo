@@ -18,16 +18,6 @@ package org.apache.dubbo.rpc.cluster.router;
 
 import java.util.Map;
 
-import static org.apache.dubbo.rpc.cluster.Constants.DYNAMIC_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.ENABLED_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.FORCE_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.KEY_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.PRIORITY_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.RAW_RULE_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.RUNTIME_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.SCOPE_KEY;
-import static org.apache.dubbo.rpc.cluster.Constants.VALID_KEY;
-
 /**
  * TODO Extract more code here if necessary
  */
@@ -44,40 +34,40 @@ public abstract class AbstractRouterRule {
     private String key;
 
     protected void parseFromMap0(Map<String, Object> map) {
-        setRawRule((String) map.get(RAW_RULE_KEY));
+        setRawRule((String) map.get("rawRule"));
 
-        Object runtime = map.get(RUNTIME_KEY);
+        Object runtime = map.get("runtime");
         if (runtime != null) {
             setRuntime(Boolean.parseBoolean(runtime.toString()));
         }
 
-        Object force = map.get(FORCE_KEY);
+        Object force = map.get("force");
         if (force != null) {
             setForce(Boolean.parseBoolean(force.toString()));
         }
 
-        Object valid = map.get(VALID_KEY);
+        Object valid = map.get("valid");
         if (valid != null) {
             setValid(Boolean.parseBoolean(valid.toString()));
         }
 
-        Object enabled = map.get(ENABLED_KEY);
+        Object enabled = map.get("enabled");
         if (enabled != null) {
             setEnabled(Boolean.parseBoolean(enabled.toString()));
         }
 
-        Object priority = map.get(PRIORITY_KEY);
+        Object priority = map.get("priority");
         if (priority != null) {
             setPriority(Integer.parseInt(priority.toString()));
         }
 
-        Object dynamic = map.get(DYNAMIC_KEY);
+        Object dynamic = map.get("dynamic");
         if (dynamic != null) {
             setDynamic(Boolean.parseBoolean(dynamic.toString()));
         }
 
-        setScope((String) map.get(SCOPE_KEY));
-        setKey((String) map.get(KEY_KEY));
+        setScope((String) map.get("scope"));
+        setKey((String) map.get("key"));
     }
 
     public String getRawRule() {

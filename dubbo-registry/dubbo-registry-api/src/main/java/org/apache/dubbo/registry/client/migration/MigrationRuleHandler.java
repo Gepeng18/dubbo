@@ -19,7 +19,7 @@ package org.apache.dubbo.registry.client.migration;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.status.reporter.FrameworkStatusReportService;
+import org.apache.dubbo.common.status.reporter.FrameworkStatusReporter;
 import org.apache.dubbo.registry.client.migration.model.MigrationRule;
 import org.apache.dubbo.registry.client.migration.model.MigrationStep;
 
@@ -43,7 +43,7 @@ public class MigrationRuleHandler<T> {
             return;
         }
 
-        // initial step : APPLICATION_FIRST
+        // initial step : APPLICATION_FIRST  迁移步骤默认为“应用优先”
         MigrationStep step = MigrationStep.APPLICATION_FIRST;
         float threshold = -1f;
 
@@ -54,6 +54,7 @@ public class MigrationRuleHandler<T> {
             logger.error("Failed to get step and threshold info from rule: " + rule, e);
         }
 
+        // 根据注册中心更新本地invoker委托对象
         if (refreshInvoker(step, threshold, rule)) {
             // refresh success, update rule
             setMigrationRule(rule);
@@ -68,8 +69,9 @@ public class MigrationRuleHandler<T> {
 
         if ((currentStep == null || currentStep != step) || !currentThreshold.equals(threshold)) {
             boolean success = true;
+            // 根据不同迁移步骤，采用不同刷新方式
             switch (step) {
-                case APPLICATION_FIRST:
+                case APPLICATION_FIRST:  // 应用优先
                     migrationInvoker.migrateToApplicationFirstInvoker(newRule);
                     break;
                 case FORCE_APPLICATION:
@@ -98,18 +100,21 @@ public class MigrationRuleHandler<T> {
     }
 
     private void report(MigrationStep step, MigrationStep originStep, String success) {
-        FrameworkStatusReportService reportService =
-            consumerURL.getOrDefaultApplicationModel().getBeanFactory().getBean(FrameworkStatusReportService.class);
-
-        if (reportService.hasReporter()) {
-            reportService.reportMigrationStepStatus(
-                reportService.createMigrationStepReport(consumerURL.getServiceInterface(), consumerURL.getVersion(),
+        if (FrameworkStatusReporter.hasReporter()) {
+            FrameworkStatusReporter.reportMigrationStepStatus(
+                    FrameworkStatusReporter.createMigrationStepReport(consumerURL.getServiceInterface(), consumerURL.getVersion(),
                             consumerURL.getGroup(), String.valueOf(originStep), String.valueOf(step), success));
         }
     }
 
     private void setMigrationRule(MigrationRule rule) {
         this.migrationInvoker.setMigrationRule(rule);
+    }
+
+    private MigrationStep getMigrationStep(MigrationRule rule, MigrationStep step) {
+        MigrationStep configuredStep = rule.getStep(consumerURL);
+        step = configuredStep == null ? step : configuredStep;
+        return step;
     }
 
     private Float getMigrationThreshold(MigrationRule rule, Float threshold) {
@@ -126,10 +131,5 @@ public class MigrationRuleHandler<T> {
             this.currentStep = currentStep;
             this.migrationInvoker.setMigrationStep(currentStep);
         }
-    }
-
-    // for test purpose
-    public MigrationStep getMigrationStep() {
-        return currentStep;
     }
 }

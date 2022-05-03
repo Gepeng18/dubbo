@@ -63,7 +63,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     @Override
     public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
-        T proxy = proxyFactory.getProxy(invoker, generic);
+        T proxy = proxyFactory.getProxy(invoker, generic);  // 创建代理对象
         if (GenericService.class != invoker.getInterface()) {
             URL url = invoker.getUrl();
             String stub = url.getParameter(STUB_KEY, url.getParameter(LOCAL_KEY));
@@ -90,7 +90,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
                             urlBuilder.addParameter(STUB_EVENT_METHODS_KEY, StringUtils.join(Wrapper.getWrapper(proxy.getClass()).getDeclaredMethodNames(), ","));
                             urlBuilder.addParameter(IS_SERVER_KEY, Boolean.FALSE.toString());
                             try {
-                                export(proxy, invoker.getInterface(), urlBuilder.build());
+                                export(proxy, (Class) invoker.getInterface(), urlBuilder.build());
                             } catch (Exception e) {
                                 LOGGER.error("export a stub service error.", e);
                             }

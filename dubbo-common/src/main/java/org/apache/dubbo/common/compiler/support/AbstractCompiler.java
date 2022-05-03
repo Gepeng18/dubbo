@@ -18,10 +18,6 @@ package org.apache.dubbo.common.compiler.support;
 
 import org.apache.dubbo.common.compiler.Compiler;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,11 +30,10 @@ public abstract class AbstractCompiler implements Compiler {
 
     private static final Pattern CLASS_PATTERN = Pattern.compile("class\\s+([$_a-zA-Z][$_a-zA-Z0-9]*)\\s+");
 
-    private static final Map<String, Lock> CLASS_IN_CREATION_MAP = new ConcurrentHashMap<>();
-
     @Override
-    public Class<?> compile(Class<?> neighbor, String code, ClassLoader classLoader) {
+    public Class<?> compile(String code, ClassLoader classLoader) {
         code = code.trim();
+        // 获取package信息
         Matcher matcher = PACKAGE_PATTERN.matcher(code);
         String pkg;
         if (matcher.find()) {
@@ -46,6 +41,8 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             pkg = "";
         }
+
+        // 获取class信息
         matcher = CLASS_PATTERN.matcher(code);
         String cls;
         if (matcher.find()) {
@@ -53,37 +50,27 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             throw new IllegalArgumentException("No such class name in " + code);
         }
+
+        // 拼接出类的全限定性类名
         String className = pkg != null && pkg.length() > 0 ? pkg + "." + cls : cls;
-        Lock lock = CLASS_IN_CREATION_MAP.get(className);
-        if (lock == null) {
-            CLASS_IN_CREATION_MAP.putIfAbsent(className, new ReentrantLock());
-            lock = CLASS_IN_CREATION_MAP.get(className);
-        }
         try {
-            lock.lock();
-            return Class.forName(className, true, classLoader);
+            // 加载指定的类
+            return Class.forName(className, true, org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass()));
         } catch (ClassNotFoundException e) {
             if (!code.endsWith("}")) {
                 throw new IllegalStateException("The java code not endsWith \"}\", code: \n" + code + "\n");
             }
             try {
-                return doCompile(neighbor, classLoader, className, code);
+                // 调用子类的doCompile()——子类就两个JDK与Javassist的
+                return doCompile(className, code);
             } catch (RuntimeException t) {
                 throw t;
             } catch (Throwable t) {
                 throw new IllegalStateException("Failed to compile class, cause: " + t.getMessage() + ", class: " + className + ", code: \n" + code + "\n, stack: " + ClassUtils.toString(t));
             }
-        } finally {
-            lock.unlock();
         }
     }
 
-    protected Class<?> doCompile(ClassLoader classLoader, String name, String source) throws Throwable {
-        return null;
-    }
-
-    protected Class<?> doCompile(Class<?> neighbor,ClassLoader classLoader, String name, String source) throws Throwable {
-        return doCompile(classLoader, name, source);
-    }
+    protected abstract Class<?> doCompile(String name, String source) throws Throwable;
 
 }

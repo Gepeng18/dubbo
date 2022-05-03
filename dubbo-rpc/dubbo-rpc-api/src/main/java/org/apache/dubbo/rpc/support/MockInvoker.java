@@ -17,8 +17,8 @@
 package org.apache.dubbo.rpc.support;
 
 import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.ExtensionDirector;
-import org.apache.dubbo.common.extension.ExtensionInjector;
+import org.apache.dubbo.common.extension.ExtensionFactory;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.utils.ArrayUtils;
 import org.apache.dubbo.common.utils.ConfigUtils;
 import org.apache.dubbo.common.utils.PojoUtils;
@@ -48,7 +48,7 @@ import static org.apache.dubbo.rpc.Constants.RETURN_PREFIX;
 import static org.apache.dubbo.rpc.Constants.THROW_PREFIX;
 
 final public class MockInvoker<T> implements Invoker<T> {
-    private final ProxyFactory proxyFactory;
+    private final static ProxyFactory PROXY_FACTORY = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
     private final static Map<String, Invoker<?>> MOCK_MAP = new ConcurrentHashMap<String, Invoker<?>>();
     private final static Map<String, Throwable> THROWABLE_MAP = new ConcurrentHashMap<String, Throwable>();
 
@@ -58,7 +58,6 @@ final public class MockInvoker<T> implements Invoker<T> {
     public MockInvoker(URL url, Class<T> type) {
         this.url = url;
         this.type = type;
-        this.proxyFactory = url.getOrDefaultFrameworkModel().getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
     }
 
     public static Object parseMockValue(String mock) throws Exception {
@@ -66,7 +65,7 @@ final public class MockInvoker<T> implements Invoker<T> {
     }
 
     public static Object parseMockValue(String mock, Type[] returnTypes) throws Exception {
-        Object value;
+        Object value = null;
         if ("empty".equals(mock)) {
             value = ReflectUtils.getEmptyObject(returnTypes != null && returnTypes.length > 0 ? (Class<?>) returnTypes[0] : null);
         } else if ("null".equals(mock)) {
@@ -100,17 +99,34 @@ final public class MockInvoker<T> implements Invoker<T> {
         if (invocation instanceof RpcInvocation) {
             ((RpcInvocation) invocation).setInvoker(this);
         }
-        String mock = getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY);
+        String mock = null;
+        // 获取<dubbo:method/>中的mock
+        if (getUrl().hasMethodParameter(invocation.getMethodName())) {
+            mock = getUrl().getParameter(invocation.getMethodName() + "." + MOCK_KEY);
+        }
 
+        // 若没有，则获取<dubbo:reference/>中的mock
+        if (StringUtils.isBlank(mock)) {
+            mock = getUrl().getParameter(MOCK_KEY);
+        }
+
+        // 若仍没有，则直接抛出异常
         if (StringUtils.isBlank(mock)) {
             throw new RpcException(new IllegalAccessException("mock can not be null. url :" + url));
         }
+
+        // 规范化mock取值
         mock = normalizeMock(URL.decode(mock));
+
+        // 处理mock以return开头的情况
         if (mock.startsWith(RETURN_PREFIX)) {
+            // 取子串：将return去掉
             mock = mock.substring(RETURN_PREFIX.length()).trim();
             try {
                 Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
+                // 获取return的结果
                 Object value = parseMockValue(mock, returnTypes);
+                // 将结果封装为异步结果
                 return AsyncRpcResult.newDefaultAsyncResult(value, invocation);
             } catch (Exception ew) {
                 throw new RpcException("mock return invoke error. method :" + invocation.getMethodName()
@@ -124,7 +140,7 @@ final public class MockInvoker<T> implements Invoker<T> {
                 Throwable t = getThrowable(mock);
                 throw new RpcException(RpcException.BIZ_EXCEPTION, t);
             }
-        } else { //impl mock
+        } else { //impl mock  调用本地降级类
             try {
                 Invoker<T> invoker = getInvoker(mock);
                 return invoker.invoke(invocation);
@@ -156,16 +172,19 @@ final public class MockInvoker<T> implements Invoker<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private Invoker<T> getInvoker(String mock) {
-        Class<T> serviceType = (Class<T>) ReflectUtils.forName(url.getServiceInterface());
-        String mockService = ConfigUtils.isDefault(mock) ? serviceType.getName() + "Mock" : mock;
+    private Invoker<T> getInvoker(String mockService) {
+        // 从缓存map中获取invoker
         Invoker<T> invoker = (Invoker<T>) MOCK_MAP.get(mockService);
         if (invoker != null) {
             return invoker;
         }
 
-        T mockObject = (T) getMockObject(url.getOrDefaultApplicationModel().getExtensionDirector(), mock, serviceType);
-        invoker = proxyFactory.getInvoker(mockObject, serviceType, url);
+        // 获取业务接口class
+        Class<T> serviceType = (Class<T>) ReflectUtils.forName(url.getServiceInterface());
+        // 创建本地降级类实例
+        T mockObject = (T) getMockObject(mockService, serviceType);
+        // 将实例封装为invoker
+        invoker = PROXY_FACTORY.getInvoker(mockObject, serviceType, url);
         if (MOCK_MAP.size() < 10000) {
             MOCK_MAP.put(mockService, invoker);
         }
@@ -173,20 +192,22 @@ final public class MockInvoker<T> implements Invoker<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static Object getMockObject(ExtensionDirector extensionDirector, String mockService, Class serviceType) {
+    public static Object getMockObject(String mockService, Class serviceType) {
         boolean isDefault = ConfigUtils.isDefault(mockService);
         if (isDefault) {
+            // 拼接本地降级类名
             mockService = serviceType.getName() + "Mock";
         }
 
         Class<?> mockClass;
         try {
+            // 将降级类加载到内存
             mockClass = ReflectUtils.forName(mockService);
         } catch (Exception e) {
             if (!isDefault) {// does not check Spring bean if it is default config.
-                ExtensionInjector extensionFactory =
-                    extensionDirector.getExtensionLoader(ExtensionInjector.class).getAdaptiveExtension();
-                Object obj = extensionFactory.getInstance(serviceType, mockService);
+                ExtensionFactory extensionFactory =
+                        ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension();
+                Object obj = extensionFactory.getExtension(serviceType, mockService);
                 if (obj != null) {
                     return obj;
                 }
@@ -202,6 +223,7 @@ final public class MockInvoker<T> implements Invoker<T> {
         }
 
         try {
+            // 创建降级类实例
             return mockClass.newInstance();
         } catch (InstantiationException e) {
             throw new IllegalStateException("No default constructor from mock class " + mockClass.getName(), e);
@@ -236,6 +258,7 @@ final public class MockInvoker<T> implements Invoker<T> {
             return mock;
         }
 
+        // 若mock为return，则返回returnnull
         if (RETURN_KEY.equalsIgnoreCase(mock)) {
             return RETURN_PREFIX + "null";
         }
@@ -244,6 +267,7 @@ final public class MockInvoker<T> implements Invoker<T> {
             return "default";
         }
 
+        // 若mock以fail:开头，则mock取其子串：将前面的fail:去掉
         if (mock.startsWith(FAIL_PREFIX)) {
             mock = mock.substring(FAIL_PREFIX.length()).trim();
         }

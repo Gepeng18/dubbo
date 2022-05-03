@@ -84,7 +84,7 @@ public class ServiceAnnotationResolver {
      */
     public String resolveInterfaceClassName() {
 
-        Class interfaceClass;
+        Class interfaceClass = null;
         // first, try to get the value from "interfaceName" attribute
         String interfaceName = resolveAttribute("interfaceName");
 

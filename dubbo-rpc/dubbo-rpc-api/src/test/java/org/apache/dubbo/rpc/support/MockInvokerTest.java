@@ -19,7 +19,6 @@ package org.apache.dubbo.rpc.support;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcInvocation;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -67,31 +66,6 @@ public class MockInvokerTest {
     }
 
     @Test
-    public void testGetDefaultObject() {
-        // test methodA in DemoServiceAMock
-        final Class<DemoServiceA> demoServiceAClass = DemoServiceA.class;
-        URL url = URL.valueOf("remote://1.2.3.4/" + demoServiceAClass.getName());
-        url = url.addParameter(MOCK_KEY, "force:true");
-        MockInvoker mockInvoker = new MockInvoker(url, demoServiceAClass);
-
-        RpcInvocation invocation = new RpcInvocation();
-        invocation.setMethodName("methodA");
-        Assertions.assertEquals(new HashMap<>(),
-                mockInvoker.invoke(invocation).getObjectAttachments());
-
-        // test methodB in DemoServiceBMock
-        final Class<DemoServiceB> demoServiceBClass = DemoServiceB.class;
-        url = URL.valueOf("remote://1.2.3.4/" + demoServiceBClass.getName());
-        url = url.addParameter(MOCK_KEY, "force:true");
-        mockInvoker = new MockInvoker(url, demoServiceBClass);
-        invocation = new RpcInvocation();
-        invocation.setMethodName("methodB");
-        Assertions.assertEquals(new HashMap<>(),
-                mockInvoker.invoke(invocation).getObjectAttachments());
-    }
-
-
-    @Test
     public void testInvokeThrowsRpcException1() {
         URL url = URL.valueOf("remote://1.2.3.4/" + String.class.getName());
         MockInvoker mockInvoker = new MockInvoker(url, null);
@@ -133,16 +107,16 @@ public class MockInvokerTest {
     @Test
     public void testGetMockObject() {
         Assertions.assertEquals("",
-                MockInvoker.getMockObject(ApplicationModel.defaultModel().getExtensionDirector(), "java.lang.String", String.class));
+                MockInvoker.getMockObject("java.lang.String", String.class));
 
         Assertions.assertThrows(IllegalStateException.class, () -> MockInvoker
-                .getMockObject(ApplicationModel.defaultModel().getExtensionDirector(), "true", String.class));
+                .getMockObject("true", String.class));
         Assertions.assertThrows(IllegalStateException.class, () -> MockInvoker
-                .getMockObject(ApplicationModel.defaultModel().getExtensionDirector(), "default", String.class));
+                .getMockObject("default", String.class));
         Assertions.assertThrows(IllegalStateException.class, () -> MockInvoker
-                .getMockObject(ApplicationModel.defaultModel().getExtensionDirector(), "java.lang.String", Integer.class));
+                .getMockObject("java.lang.String", Integer.class));
         Assertions.assertThrows(IllegalStateException.class, () -> MockInvoker
-                .getMockObject(ApplicationModel.defaultModel().getExtensionDirector(), "java.io.Serializable", Serializable.class));
+                .getMockObject("java.io.Serializable", Serializable.class));
     }
 
     @Test

@@ -54,7 +54,6 @@ public class XxxMockReferenceConfig extends ReferenceConfig<XxxService> {
 
     @Override
     public synchronized void destroy() {
-        super.destroy();
         destroyMethodRun = true;
     }
 }

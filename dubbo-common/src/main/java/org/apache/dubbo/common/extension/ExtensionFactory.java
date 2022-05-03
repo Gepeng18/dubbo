@@ -18,16 +18,9 @@ package org.apache.dubbo.common.extension;
 
 /**
  * ExtensionFactory
- * @deprecated use {@link ExtensionInjector} instead
  */
-@Deprecated
-@SPI(scope = ExtensionScope.FRAMEWORK)
-public interface ExtensionFactory extends ExtensionInjector {
-
-    @Override
-    default <T> T getInstance(Class<T> type, String name) {
-        return getExtension(type, name);
-    }
+@SPI
+public interface ExtensionFactory {
 
     /**
      * Get extension.

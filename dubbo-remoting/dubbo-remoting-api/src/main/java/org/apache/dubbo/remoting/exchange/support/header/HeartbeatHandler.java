@@ -64,22 +64,24 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         setReadTimestamp(channel);
-        if (isHeartbeatRequest(message)) {
+        if (isHeartbeatRequest(message)) {  // 判断是否为心跳请求
             Request req = (Request) message;
             if (req.isTwoWay()) {
                 Response res = new Response(req.getId(), req.getVersion());
                 res.setEvent(HEARTBEAT_EVENT);
                 channel.send(res);
-                if (logger.isDebugEnabled()) {
+                if (logger.isInfoEnabled()) {
                     int heartbeat = channel.getUrl().getParameter(Constants.HEARTBEAT_KEY, 0);
-                    logger.debug("Received heartbeat from remote channel " + channel.getRemoteAddress()
-                        + ", cause: The channel has no data-transmission exceeds a heartbeat period"
-                        + (heartbeat > 0 ? ": " + heartbeat + "ms" : ""));
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Received heartbeat from remote channel " + channel.getRemoteAddress()
+                                + ", cause: The channel has no data-transmission exceeds a heartbeat period"
+                                + (heartbeat > 0 ? ": " + heartbeat + "ms" : ""));
+                    }
                 }
             }
             return;
         }
-        if (isHeartbeatResponse(message)) {
+        if (isHeartbeatResponse(message)) {  // 判断当前是否为心跳响应
             if (logger.isDebugEnabled()) {
                 logger.debug("Receive heartbeat response in thread " + Thread.currentThread().getName());
             }

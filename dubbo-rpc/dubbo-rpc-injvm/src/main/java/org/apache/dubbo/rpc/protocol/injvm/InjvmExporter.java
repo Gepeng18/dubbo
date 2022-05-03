@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * InjvmExporter
  */
-public class InjvmExporter<T> extends AbstractExporter<T> {
+class InjvmExporter<T> extends AbstractExporter<T> {
 
     private final String key;
 
@@ -35,7 +35,7 @@ public class InjvmExporter<T> extends AbstractExporter<T> {
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
-        exporterMap.put(key, this);
+        exporterMap.put(key, this);  // 将当前exporter写入到缓存map
     }
 
     @Override

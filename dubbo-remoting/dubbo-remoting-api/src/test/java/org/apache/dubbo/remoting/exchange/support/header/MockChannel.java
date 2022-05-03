@@ -17,11 +17,9 @@
 
 package org.apache.dubbo.remoting.exchange.support.header;
 
-import org.apache.dubbo.common.Parameters;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.remoting.ChannelHandler;
-import org.apache.dubbo.remoting.Client;
 import org.apache.dubbo.remoting.RemotingException;
 
 import java.net.InetSocketAddress;
@@ -31,13 +29,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MockChannel implements Channel, Client {
+public class MockChannel implements Channel {
 
     private Map<String, Object> attributes = new HashMap<String, Object>();
 
     private volatile boolean closed = false;
     private volatile boolean closing = false;
-    private volatile int reconnectCount = 0;
     private List<Object> sentObjects = new ArrayList<Object>();
 
     @Override
@@ -121,24 +118,5 @@ public class MockChannel implements Channel, Client {
 
     public boolean isClosing() {
         return closing;
-    }
-
-    @Override
-    public void reset(URL url) {
-
-    }
-
-    @Override
-    public void reconnect() throws RemotingException {
-        reconnectCount++;
-    }
-
-    @Override
-    public void reset(Parameters parameters) {
-
-    }
-
-    public int getReconnectCount() {
-        return reconnectCount;
     }
 }

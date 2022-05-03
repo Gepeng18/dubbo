@@ -16,7 +16,6 @@
  */
 package org.apache.dubbo.common.logger;
 
-import org.apache.dubbo.common.extension.ExtensionScope;
 import org.apache.dubbo.common.extension.SPI;
 
 import java.io.File;
@@ -24,7 +23,7 @@ import java.io.File;
 /**
  * Logger provider
  */
-@SPI(scope = ExtensionScope.FRAMEWORK)
+@SPI
 public interface LoggerAdapter {
 
     /**

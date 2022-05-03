@@ -21,5 +21,5 @@ package org.apache.dubbo.metadata.store;
  */
 public interface InterfaceNameTestService {
 
-    void test();
+    public void test();
 }

@@ -20,15 +20,14 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.config.support.Parameter;
-import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.Map;
 
 import static org.apache.dubbo.common.constants.CommonConstants.EXTRA_KEYS_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.SHUTDOWN_WAIT_KEY;
-import static org.apache.dubbo.common.constants.RegistryConstants.ENABLE_EMPTY_PROTECTION_KEY;
-import static org.apache.dubbo.common.constants.RegistryConstants.REGISTER_MODE_KEY;
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_CLUSTER_KEY;
+import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_PUBLISH_INSTANCE_KEY;
+import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_PUBLISH_INTERFACE_KEY;
 import static org.apache.dubbo.common.constants.RemotingConstants.BACKUP_KEY;
 import static org.apache.dubbo.common.utils.PojoUtils.updatePropertyIfAbsent;
 
@@ -95,7 +94,7 @@ public class RegistryConfig extends AbstractConfig {
     private String version;
 
     /**
-     * Connect timeout in milliseconds for register center
+     * Request timeout in milliseconds for register center
      */
     private Integer timeout;
 
@@ -180,33 +179,18 @@ public class RegistryConfig extends AbstractConfig {
      */
     private Integer weight;
 
-    private String registerMode;
+    private Boolean publishInterface;
 
-    private Boolean enableEmptyProtection;
+    private Boolean publishInstance;
 
     public RegistryConfig() {
-    }
-
-    public RegistryConfig(ApplicationModel applicationModel) {
-        super(applicationModel);
     }
 
     public RegistryConfig(String address) {
         setAddress(address);
     }
 
-    public RegistryConfig(ApplicationModel applicationModel, String address) {
-        super(applicationModel);
-        setAddress(address);
-    }
-
     public RegistryConfig(String address, String protocol) {
-        setAddress(address);
-        setProtocol(protocol);
-    }
-
-    public RegistryConfig(ApplicationModel applicationModel, String address, String protocol) {
-        super(applicationModel);
         setAddress(address);
         setProtocol(protocol);
     }
@@ -223,6 +207,8 @@ public class RegistryConfig extends AbstractConfig {
 
     public void setProtocol(String protocol) {
         this.protocol = protocol;
+        // protocol as id is inappropriate, registries's protocol may be duplicated
+//        this.updateIdIfAbsent(protocol);
     }
 
     @Parameter(excluded = true)
@@ -341,7 +327,7 @@ public class RegistryConfig extends AbstractConfig {
     }
 
     public void setTransporter(String transporter) {
-        /*if(transporter != null && transporter.length() > 0 && ! this.getExtensionLoader(Transporter.class).hasExtension(transporter)){
+        /*if(transporter != null && transporter.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(transporter)){
             throw new IllegalStateException("No such transporter type : " + transporter);
         }*/
         this.transporter = transporter;
@@ -352,7 +338,7 @@ public class RegistryConfig extends AbstractConfig {
     }
 
     public void setServer(String server) {
-        /*if(server != null && server.length() > 0 && ! this.getExtensionLoader(Transporter.class).hasExtension(server)){
+        /*if(server != null && server.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(server)){
             throw new IllegalStateException("No such server type : " + server);
         }*/
         this.server = server;
@@ -363,7 +349,7 @@ public class RegistryConfig extends AbstractConfig {
     }
 
     public void setClient(String client) {
-        /*if(client != null && client.length() > 0 && ! this.getExtensionLoader(Transporter.class).hasExtension(client)){
+        /*if(client != null && client.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(client)){
             throw new IllegalStateException("No such client type : " + client);
         }*/
         this.client = client;
@@ -519,28 +505,28 @@ public class RegistryConfig extends AbstractConfig {
         this.weight = weight;
     }
 
-    @Parameter(key = REGISTER_MODE_KEY)
-    public String getRegisterMode() {
-        return registerMode;
+    @Parameter(key = REGISTRY_PUBLISH_INTERFACE_KEY)
+    public Boolean getPublishInterface() {
+        return publishInterface;
     }
 
-    public void setRegisterMode(String registerMode) {
-        this.registerMode = registerMode;
+    public void setPublishInterface(Boolean publishInterface) {
+        this.publishInterface = publishInterface;
     }
 
-    @Parameter(key = ENABLE_EMPTY_PROTECTION_KEY)
-    public Boolean getEnableEmptyProtection() {
-        return enableEmptyProtection;
+    @Parameter(key = REGISTRY_PUBLISH_INSTANCE_KEY)
+    public Boolean getPublishInstance() {
+        return publishInstance;
     }
 
-    public void setEnableEmptyProtection(Boolean enableEmptyProtection) {
-        this.enableEmptyProtection = enableEmptyProtection;
+    public void setPublishInstance(Boolean publishInstance) {
+        this.publishInstance = publishInstance;
     }
 
     @Override
     @Parameter(excluded = true, attribute = false)
     public boolean isValid() {
         // empty protocol will default to 'dubbo'
-        return !StringUtils.isEmpty(address) || !StringUtils.isEmpty(protocol);
+        return !StringUtils.isEmpty(address);
     }
 }

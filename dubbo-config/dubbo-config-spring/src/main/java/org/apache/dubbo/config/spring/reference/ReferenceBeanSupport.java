@@ -16,14 +16,12 @@
  */
 package org.apache.dubbo.config.spring.reference;
 
+import com.alibaba.spring.util.AnnotationUtils;
 import org.apache.dubbo.common.utils.Assert;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.config.spring.Constants;
 import org.apache.dubbo.config.spring.ReferenceBean;
-import org.apache.dubbo.config.spring.util.DubboAnnotationUtils;
 import org.apache.dubbo.rpc.service.GenericService;
-
-import com.alibaba.spring.util.AnnotationUtils;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -48,6 +46,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static org.apache.dubbo.common.utils.StringUtils.join;
+import static org.apache.dubbo.config.spring.reference.ReferenceCreator.convertStringArrayToMap;
 
 public class ReferenceBeanSupport {
 
@@ -59,16 +58,8 @@ public class ReferenceBeanSupport {
             interfaceName = (String) attributes.get(ReferenceAttributes.INTERFACE_NAME);
         }
         if (interfaceName == null) {
-            Object interfaceClassValue = attributes.get(ReferenceAttributes.INTERFACE_CLASS);
-            if (interfaceClassValue instanceof Class) {
-                interfaceName = ((Class) interfaceClassValue).getName();
-            } else if (interfaceClassValue instanceof String) {
-                if (interfaceClassValue.equals("void")) {
-                    attributes.remove(ReferenceAttributes.INTERFACE_CLASS);
-                } else {
-                    interfaceName = (String) interfaceClassValue;
-                }
-            }
+            Class clazz = (Class) attributes.get(ReferenceAttributes.INTERFACE_CLASS);
+            interfaceName = clazz != null ? clazz.getName() : null;
         }
         if (interfaceName == null && defaultInterfaceClass != GenericService.class) {
             interfaceName = defaultInterfaceClass.getName();
@@ -90,7 +81,7 @@ public class ReferenceBeanSupport {
         // String[] registry => String registryIds
         String[] registryIds = (String[]) attributes.get(ReferenceAttributes.REGISTRY);
         if (registryIds != null) {
-            String value = join(registryIds, ",");
+            String value = join((String[]) registryIds, ",");
             attributes.remove(ReferenceAttributes.REGISTRY);
             attributes.put(ReferenceAttributes.REGISTRY_IDS, value);
         }
@@ -162,7 +153,7 @@ public class ReferenceBeanSupport {
         }
         if (ReferenceAttributes.PARAMETERS.equals(key) && obj instanceof String[]) {
             //convert parameters array pairs to map
-            obj = DubboAnnotationUtils.convertParameters((String[]) obj);
+            obj = convertStringArrayToMap((String[]) obj);
         }
 
         //to string

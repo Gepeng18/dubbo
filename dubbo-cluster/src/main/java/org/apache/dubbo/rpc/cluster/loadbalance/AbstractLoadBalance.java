@@ -20,12 +20,12 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.cluster.ClusterInvoker;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
 
 import java.util.List;
 
 import static org.apache.dubbo.common.constants.CommonConstants.TIMESTAMP_KEY;
+import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_KEY;
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_SERVICE_REFERENCE_PATH;
 import static org.apache.dubbo.rpc.cluster.Constants.DEFAULT_WARMUP;
 import static org.apache.dubbo.rpc.cluster.Constants.DEFAULT_WEIGHT;
@@ -46,6 +46,7 @@ public abstract class AbstractLoadBalance implements LoadBalance {
      * @return weight which takes warmup into account
      */
     static int calculateWarmupWeight(int uptime, int warmup, int weight) {
+        // 以下式子等价于：  (uptime / warmup) * weight
         int ww = (int) ( uptime / ((float) warmup / weight));
         return ww < 1 ? 1 : (Math.min(ww, weight));
     }
@@ -58,6 +59,7 @@ public abstract class AbstractLoadBalance implements LoadBalance {
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
+        // 调用各种不同的负载均衡策略中的doSelect()
         return doSelect(invokers, url, invocation);
     }
 
@@ -72,27 +74,29 @@ public abstract class AbstractLoadBalance implements LoadBalance {
      * @param invocation the invocation of this invoker
      * @return weight
      */
-    protected int getWeight(Invoker<?> invoker, Invocation invocation) {
+    int getWeight(Invoker<?> invoker, Invocation invocation) {
         int weight;
         URL url = invoker.getUrl();
-        if (invoker instanceof ClusterInvoker) {
-            url = ((ClusterInvoker<?>) invoker).getRegistryUrl();
-        }
-
         // Multiple registry scenario, load balance among multiple registries.
+        // 对于多注册中心的场景，各invoker的权重值就是注册中心的权重
         if (REGISTRY_SERVICE_REFERENCE_PATH.equals(url.getServiceInterface())) {
-            weight = url.getParameter(WEIGHT_KEY, DEFAULT_WEIGHT);
-        } else {
+            weight = url.getParameter(REGISTRY_KEY + "." + WEIGHT_KEY, DEFAULT_WEIGHT);
+        } else {  // 单注册中心
+            // 获取weight属性的值
             weight = url.getMethodParameter(invocation.getMethodName(), WEIGHT_KEY, DEFAULT_WEIGHT);
             if (weight > 0) {
+                // 获取provider主机的启动时间戳
                 long timestamp = invoker.getUrl().getParameter(TIMESTAMP_KEY, 0L);
                 if (timestamp > 0L) {
+                    // 计算当前provider已经启动多久了
                     long uptime = System.currentTimeMillis() - timestamp;
                     if (uptime < 0) {
                         return 1;
                     }
+                    // 获取warmup(预热)属性值
                     int warmup = invoker.getUrl().getParameter(WARMUP_KEY, DEFAULT_WARMUP);
                     if (uptime > 0 && uptime < warmup) {
+                        // 计算预热过程中的权重
                         weight = calculateWarmupWeight((int)uptime, warmup, weight);
                     }
                 }

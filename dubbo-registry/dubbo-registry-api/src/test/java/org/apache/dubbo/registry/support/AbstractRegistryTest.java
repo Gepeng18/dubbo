@@ -109,7 +109,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testRegisterIfURLNULL() {
+    public void testRegisterIfURLNULL() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             abstractRegistry.register(null);
             Assertions.fail("register url == null");
@@ -120,9 +120,10 @@ public class AbstractRegistryTest {
      * Test method for
      * {@link org.apache.dubbo.registry.support.AbstractRegistry#unregister(URL)}.
      *
+     * @throws Exception
      */
     @Test
-    public void testUnregister() {
+    public void testUnregister() throws Exception {
         //test one unregister
         URL url = new ServiceConfigURL("dubbo", "192.168.0.1", 2200);
         abstractRegistry.register(url);
@@ -143,7 +144,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testUnregisterIfUrlNull() {
+    public void testUnregisterIfUrlNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             abstractRegistry.unregister(null);
             Assertions.fail("unregister url == null");
@@ -154,7 +155,7 @@ public class AbstractRegistryTest {
      * test subscribe and unsubscribe
      */
     @Test
-    public void testSubscribeAndUnsubscribe() {
+    public void testSubscribeAndUnsubscribe() throws Exception {
         //test subscribe
         final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
         NotifyListener listener = urls -> notified.set(Boolean.TRUE);
@@ -169,7 +170,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testSubscribeIfUrlNull() {
+    public void testSubscribeIfUrlNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
             NotifyListener listener = urls -> notified.set(Boolean.TRUE);
@@ -180,7 +181,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testSubscribeIfListenerNull() {
+    public void testSubscribeIfListenerNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
             NotifyListener listener = urls -> notified.set(Boolean.TRUE);
@@ -191,7 +192,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testUnsubscribeIfUrlNull() {
+    public void testUnsubscribeIfUrlNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
             NotifyListener listener = urls -> notified.set(Boolean.TRUE);
@@ -201,7 +202,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testUnsubscribeIfNotifyNull() {
+    public void testUnsubscribeIfNotifyNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
             URL url = new ServiceConfigURL("dubbo", "192.168.0.1", 2200);
@@ -214,9 +215,10 @@ public class AbstractRegistryTest {
      * Test method for
      * {@link org.apache.dubbo.registry.support.AbstractRegistry#subscribe(URL, NotifyListener)}.
      *
+     * @throws Exception
      */
     @Test
-    public void testSubscribe() {
+    public void testSubscribe() throws Exception {
         // check parameters
         try {
             abstractRegistry.subscribe(testUrl, null);
@@ -242,9 +244,10 @@ public class AbstractRegistryTest {
      * Test method for
      * {@link org.apache.dubbo.registry.support.AbstractRegistry#unsubscribe(URL, NotifyListener)}.
      *
+     * @throws Exception
      */
     @Test
-    public void testUnsubscribe() {
+    public void testUnsubscribe() throws Exception {
         // check parameters
         try {
             abstractRegistry.unsubscribe(testUrl, null);
@@ -264,7 +267,7 @@ public class AbstractRegistryTest {
         // check if unsubscribe successfully
         abstractRegistry.subscribe(testUrl, listener);
         abstractRegistry.unsubscribe(testUrl, listener);
-        // Since we have subscribed testUrl, here should return a empty set instead of null
+        // Since we have subscribe testUrl, here should return a empty set instead of null
         Assertions.assertNotNull(abstractRegistry.getSubscribed().get(testUrl));
         Assertions.assertFalse(abstractRegistry.getSubscribed().get(testUrl).contains(listener));
     }
@@ -309,7 +312,7 @@ public class AbstractRegistryTest {
      * {@link org.apache.dubbo.registry.support.AbstractRegistry#notify(List)}.
      */
     @Test
-    public void testNotify() {
+    public void testNotify() throws Exception {
         final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
         NotifyListener listener1 = urls -> notified.set(Boolean.TRUE);
         URL url1 = new ServiceConfigURL("dubbo", "192.168.0.1", 2200, parametersConsumer);
@@ -335,7 +338,7 @@ public class AbstractRegistryTest {
      * test notifyList
      */
     @Test
-    public void testNotifyList() {
+    public void testNotifyList() throws Exception {
         final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
         NotifyListener listener1 = urls -> notified.set(Boolean.TRUE);
         URL url1 = new ServiceConfigURL("dubbo", "192.168.0.1", 2200, parametersConsumer);
@@ -358,7 +361,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void testNotifyIfURLNull() {
+    public void testNotifyIfURLNull() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             final AtomicReference<Boolean> notified = new AtomicReference<Boolean>(false);
             NotifyListener listener1 = urls -> notified.set(Boolean.TRUE);
@@ -406,9 +409,10 @@ public class AbstractRegistryTest {
      * Test method for
      * {@link org.apache.dubbo.registry.support.AbstractRegistry#notify(URL, NotifyListener, List)}.
      *
+     * @throws Exception
      */
     @Test
-    public void testNotifyArgs() {
+    public void testNotifyArgs() throws Exception {
         // check parameters
         try {
             abstractRegistry.notify(null, null, null);
@@ -444,7 +448,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void filterEmptyTest() {
+    public void filterEmptyTest() throws Exception {
         // check parameters
         try {
             AbstractRegistry.filterEmpty(null, null);
@@ -477,7 +481,7 @@ public class AbstractRegistryTest {
 
 
     @Test
-    public void lookupTest() {
+    public void lookupTest() throws Exception {
         // loop up before registry
         try {
             abstractRegistry.lookup(null);
@@ -497,7 +501,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void destroyTest() {
+    public void destroyTest() throws Exception {
         abstractRegistry.register(testUrl);
         abstractRegistry.subscribe(testUrl, listener);
         Assertions.assertEquals(1, abstractRegistry.getRegistered().size());
@@ -509,7 +513,7 @@ public class AbstractRegistryTest {
     }
 
     @Test
-    public void allTest() {
+    public void allTest() throws Exception {
         // test all methods
         List<URL> urls = new ArrayList<>();
         urls.add(testUrl);

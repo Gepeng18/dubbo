@@ -26,8 +26,6 @@ import org.apache.dubbo.remoting.Codec2;
 import org.apache.dubbo.remoting.Constants;
 import org.apache.dubbo.remoting.exchange.Request;
 import org.apache.dubbo.remoting.exchange.Response;
-import org.apache.dubbo.rpc.model.FrameworkModel;
-import org.apache.dubbo.rpc.model.ScopeModelAware;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,19 +35,13 @@ import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
 /**
  * AbstractCodec
  */
-public abstract class AbstractCodec implements Codec2, ScopeModelAware {
+public abstract class AbstractCodec implements Codec2 {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractCodec.class);
 
     private static final String CLIENT_SIDE = "client";
 
     private static final String SERVER_SIDE = "server";
-    protected FrameworkModel frameworkModel;
-
-    @Override
-    public void setFrameworkModel(FrameworkModel frameworkModel) {
-        this.frameworkModel = frameworkModel;
-    }
 
     protected static void checkPayload(Channel channel, long size) throws IOException {
         int payload = getPayload(channel);

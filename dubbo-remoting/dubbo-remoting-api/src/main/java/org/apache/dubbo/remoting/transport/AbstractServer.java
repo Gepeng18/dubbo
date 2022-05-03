@@ -17,6 +17,7 @@
 package org.apache.dubbo.remoting.transport;
 
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.threadpool.manager.ExecutorRepository;
@@ -44,16 +45,15 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
 
     protected static final String SERVER_THREAD_POOL_NAME = "DubboServerHandler";
     private static final Logger logger = LoggerFactory.getLogger(AbstractServer.class);
-    private ExecutorService executor;
+    ExecutorService executor;
     private InetSocketAddress localAddress;
     private InetSocketAddress bindAddress;
     private int accepts;
 
-    private ExecutorRepository executorRepository;
+    private ExecutorRepository executorRepository = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
 
     public AbstractServer(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
-        executorRepository = url.getOrDefaultApplicationModel().getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
         localAddress = getUrl().toInetSocketAddress();
 
         String bindIp = getUrl().getParameter(Constants.BIND_IP_KEY, getUrl().getHost());
@@ -64,7 +64,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         bindAddress = new InetSocketAddress(bindIp, bindPort);
         this.accepts = url.getParameter(ACCEPTS_KEY, DEFAULT_ACCEPTS);
         try {
-            doOpen();
+            doOpen(); // 创建并启动Netty Server
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
             }
@@ -97,6 +97,9 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         }
 
         executorRepository.updateThreadpool(url, executor);
+        // getUrl() 获取原来的url
+        // url.getParameters() 获取当前暴露服务url中的所有属性，其为一个map
+        // addParameters() 将参数map中的属性以元数据的形式添加到原来的url，形成新的url
         super.setUrl(getUrl().addParameters(url.getParameters()));
     }
 

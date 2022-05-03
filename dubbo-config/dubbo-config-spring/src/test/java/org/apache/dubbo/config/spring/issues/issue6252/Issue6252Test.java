@@ -18,10 +18,9 @@ package org.apache.dubbo.config.spring.issues.issue6252;
 
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.config.spring.ZooKeeperServer;
 import org.apache.dubbo.config.spring.api.DemoService;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubboConfig;
-
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -39,12 +38,7 @@ import org.springframework.context.annotation.PropertySource;
 public class Issue6252Test {
 
     @BeforeAll
-    public static void beforeAll() {
-        DubboBootstrap.reset();
-    }
-
-    @AfterAll
-    public static void afterAll() {
+    public static void setUp() {
         DubboBootstrap.reset();
     }
 
@@ -53,6 +47,8 @@ public class Issue6252Test {
 
     @Test
     public void test() throws Exception {
+        ZooKeeperServer.start();
+
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Issue6252Test.class);
         try {
             DemoService demoService = context.getBean(DemoService.class);

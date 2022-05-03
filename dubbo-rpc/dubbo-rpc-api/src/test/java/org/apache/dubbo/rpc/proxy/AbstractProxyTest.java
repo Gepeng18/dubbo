@@ -21,8 +21,6 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.ProxyFactory;
 import org.apache.dubbo.rpc.RpcInvocation;
-import org.apache.dubbo.rpc.service.Destroyable;
-import org.apache.dubbo.rpc.service.EchoService;
 import org.apache.dubbo.rpc.support.DemoService;
 import org.apache.dubbo.rpc.support.DemoServiceImpl;
 import org.apache.dubbo.rpc.support.MyInvoker;
@@ -41,23 +39,20 @@ public abstract class AbstractProxyTest {
     public void testGetProxy() throws Exception {
         URL url = URL.valueOf("test://test:11/test?group=dubbo&version=1.1");
 
-        MyInvoker<DemoService> invoker = new MyInvoker<>(url);
+        Invoker<DemoService> invoker = new MyInvoker<>(url);
 
         DemoService proxy = factory.getProxy(invoker);
 
         Assertions.assertNotNull(proxy);
 
         Assertions.assertTrue(Arrays.asList(proxy.getClass().getInterfaces()).contains(DemoService.class));
-        Assertions.assertTrue(Arrays.asList(proxy.getClass().getInterfaces()).contains(Destroyable.class));
-        Assertions.assertTrue(Arrays.asList(proxy.getClass().getInterfaces()).contains(EchoService.class));
+
+        // Not equal
+        //Assertions.assertEquals(proxy.toString(), invoker.toString());
+        //Assertions.assertEquals(proxy.hashCode(), invoker.hashCode());
 
         Assertions.assertEquals(invoker.invoke(new RpcInvocation("echo", DemoService.class.getName(), DemoService.class.getName() + ":dubbo", new Class[]{String.class}, new Object[]{"aa"})).getValue()
                 , proxy.echo("aa"));
-
-        Destroyable destroyable = (Destroyable)proxy;
-        destroyable.$destroy();
-        Assertions.assertTrue(invoker.isDestroyed());
-
     }
 
     @Test

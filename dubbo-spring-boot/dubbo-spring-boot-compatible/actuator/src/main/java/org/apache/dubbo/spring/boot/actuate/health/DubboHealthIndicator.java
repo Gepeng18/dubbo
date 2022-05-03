@@ -21,8 +21,6 @@ import org.apache.dubbo.common.status.StatusChecker;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.ProviderConfig;
 import org.apache.dubbo.config.context.ConfigManager;
-import org.apache.dubbo.rpc.model.ApplicationModel;
-import org.apache.dubbo.rpc.model.ModuleModel;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
@@ -56,9 +54,6 @@ public class DubboHealthIndicator extends AbstractHealthIndicator {
 
     @Autowired
     private ConfigManager configManager;
-
-    @Autowired
-    private ApplicationModel applicationModel;
 
     @Override
     protected void doHealthCheck(Health.Builder builder) throws Exception {
@@ -184,10 +179,7 @@ public class DubboHealthIndicator extends AbstractHealthIndicator {
     private Map<String, String> resolveStatusCheckerNamesMapFromProviderConfig() {
 
         if (providerConfigs.isEmpty()) {
-            providerConfigs = new LinkedHashMap<>();
-            for (ModuleModel moduleModel : applicationModel.getModuleModels()) {
-                providerConfigs.putAll(moduleModel.getConfigManager().getConfigsMap(ProviderConfig.class));
-            }
+            providerConfigs = configManager.getConfigsMap(ProviderConfig.class);
         }
 
         Map<String, String> statusCheckerNamesMap = new LinkedHashMap<>();

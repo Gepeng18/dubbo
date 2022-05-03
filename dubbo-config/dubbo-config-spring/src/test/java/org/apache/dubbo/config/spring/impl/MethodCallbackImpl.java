@@ -17,7 +17,6 @@
 package org.apache.dubbo.config.spring.impl;
 
 import org.apache.dubbo.config.spring.api.MethodCallback;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
@@ -25,24 +24,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.annotation.PostConstruct;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MethodCallbackImpl implements MethodCallback {
-    private String onInvoke1 = "";
-    private String onReturn1 = "";
-    private String onThrow1 = "";
-
-    private String onInvoke2 = "";
-    private String onReturn2 = "";
-    private String onThrow2 = "";
+    private String onInvoke;
+    private String onReturn;
+    private String onThrow;
 
     @Autowired
     private Environment environment;
 
     @Autowired
     private ApplicationContext context;
-
-    public static AtomicInteger cnt = new AtomicInteger();
 
     @PostConstruct
     protected void init() {
@@ -51,132 +43,53 @@ public class MethodCallbackImpl implements MethodCallback {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void oninvoke1(String request) {
+    public void oninvoke(String request) {
         try {
             checkInjection();
             checkTranscation();
-            synchronized (this.onInvoke1) {
-                this.onInvoke1 += "dubbo invoke success!";
-            }
+            this.onInvoke = "dubbo invoke success";
         } catch (Exception e) {
-            synchronized (this.onInvoke1) {
-                this.onInvoke1 += e.toString();
-            }
-            throw e;
-        }
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public void oninvoke2(String request) {
-        try {
-            checkInjection();
-            checkTranscation();
-            synchronized (this.onInvoke2) {
-                this.onInvoke2 += "dubbo invoke success(2)!";
-            }
-        } catch (Exception e) {
-            synchronized (this.onInvoke2) {
-                this.onInvoke2 += e.toString();
-            }
+            this.onInvoke = e.toString();
             throw e;
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void onreturn1(String response, String request) {
+    public void onreturn(String response, String request) {
         try {
             checkInjection();
             checkTranscation();
-            synchronized (this.onReturn1) {
-                this.onReturn1 += "dubbo return success!";
-            }
+            this.onReturn = "dubbo return success";
         } catch (Exception e) {
-            synchronized (this.onReturn1) {
-                this.onReturn1 += e.toString();
-            }
-            throw e;
-        } finally {
-            cnt.incrementAndGet();
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void onreturn2(String response, String request) {
-        try {
-            checkInjection();
-            checkTranscation();
-            synchronized (this.onReturn2) {
-                this.onReturn2 += "dubbo return success(2)!";
-            }
-        } catch (Exception e) {
-            synchronized (this.onReturn2) {
-                this.onReturn2 += e.toString();
-            }
-            throw e;
-        } finally {
-            cnt.incrementAndGet();
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void onthrow1(Throwable ex, String request) {
-        try {
-            checkInjection();
-            checkTranscation();
-            synchronized (this.onThrow1) {
-                this.onThrow1 += "dubbo throw exception!";
-            }
-        } catch (Exception e) {
-            synchronized (this.onThrow1) {
-                this.onThrow1 += e.toString();
-            }
+            this.onReturn = e.toString();
             throw e;
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void onthrow2(Throwable ex, String request) {
+    public void onthrow(Throwable ex, String request) {
         try {
             checkInjection();
             checkTranscation();
-            synchronized (this.onThrow2) {
-                this.onThrow2 += "dubbo throw exception(2)!";
-            }
+            this.onThrow = "dubbo throw exception";
         } catch (Exception e) {
-            synchronized (this.onThrow2) {
-                this.onThrow2 += e.toString();
-            }
+            this.onThrow = e.toString();
             throw e;
         }
     }
 
-    public String getOnInvoke1() {
-        return this.onInvoke1;
+    public String getOnInvoke() {
+        return this.onInvoke;
     }
 
-    public String getOnReturn1() {
-        return this.onReturn1;
+    public String getOnReturn() {
+        return this.onReturn;
     }
 
-    public String getOnThrow1() {
-        return this.onThrow1;
-    }
-
-    public String getOnInvoke2() {
-        return this.onInvoke2;
-    }
-
-    public String getOnReturn2() {
-        return this.onReturn2;
-    }
-
-    public String getOnThrow2() {
-        return this.onThrow2;
+    public String getOnThrow() {
+        return this.onThrow;
     }
 
     private void checkInjection() {

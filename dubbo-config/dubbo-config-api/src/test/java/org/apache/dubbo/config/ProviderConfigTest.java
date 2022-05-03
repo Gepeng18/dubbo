@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 public class ProviderConfigTest {
-
     @Test
     public void testProtocol() throws Exception {
         ProviderConfig provider = new ProviderConfig();
@@ -221,7 +220,7 @@ public class ProviderConfigTest {
 
     @Test
     public void testMetaData() {
-        ProviderConfig config = new ProviderConfig();
+        ProtocolConfig config = new ProtocolConfig();
         Map<String, String> metaData = config.getMetaData();
         Assertions.assertEquals(0, metaData.size(), "Expect empty metadata but found: "+metaData);
     }

@@ -22,8 +22,7 @@ import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.status.Status;
 import org.apache.dubbo.common.status.StatusChecker;
 import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.config.spring.extension.SpringExtensionInjector;
-import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.config.spring.extension.SpringExtensionFactory;
 
 import org.springframework.context.ApplicationContext;
 
@@ -32,6 +31,8 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * DataSourceStatusChecker
@@ -41,31 +42,17 @@ public class DataSourceStatusChecker implements StatusChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSourceStatusChecker.class);
 
-    private ApplicationModel applicationModel;
-
-    private ApplicationContext applicationContext;
-
-    public DataSourceStatusChecker(ApplicationModel applicationModel) {
-        this.applicationModel = applicationModel;
-    }
-
-    public DataSourceStatusChecker(ApplicationContext context) {
-        this.applicationContext = context;
-    }
-
     @Override
     public Status check() {
-        if (applicationContext == null) {
-            SpringExtensionInjector springExtensionInjector = SpringExtensionInjector.get(applicationModel);
-            applicationContext = springExtensionInjector.getContext();
-        }
+        Optional<ApplicationContext> context =
+                SpringExtensionFactory.getContexts().stream().filter(Objects::nonNull).findFirst();
 
-        if (applicationContext == null) {
+        if (!context.isPresent()) {
             return new Status(Status.Level.UNKNOWN);
         }
 
         Map<String, DataSource> dataSources =
-            applicationContext.getBeansOfType(DataSource.class, false, false);
+                context.get().getBeansOfType(DataSource.class, false, false);
         if (CollectionUtils.isEmptyMap(dataSources)) {
             return new Status(Status.Level.UNKNOWN);
         }

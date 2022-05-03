@@ -21,8 +21,8 @@ import org.apache.dubbo.qos.command.CommandContext;
 import org.apache.dubbo.qos.command.annotation.Cmd;
 import org.apache.dubbo.qos.command.util.ServiceCheckUtils;
 import org.apache.dubbo.qos.textui.TTable;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.ConsumerModel;
-import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.model.ProviderModel;
 
 import java.util.Collection;
@@ -31,12 +31,6 @@ import java.util.Collection;
         "ls"
 })
 public class Ls implements BaseCommand {
-    private FrameworkModel frameworkModel;
-
-    public Ls(FrameworkModel frameworkModel) {
-        this.frameworkModel = frameworkModel;
-    }
-
     @Override
     public String execute(CommandContext commandContext, String[] args) {
         StringBuilder result = new StringBuilder();
@@ -49,7 +43,7 @@ public class Ls implements BaseCommand {
     public String listProvider() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("As Provider side:" + System.lineSeparator());
-        Collection<ProviderModel> providerModelList = frameworkModel.getServiceRepository().allProviderModels();
+        Collection<ProviderModel> providerModelList = ApplicationModel.allProviderModels();
 
         TTable tTable = new TTable(new TTable.ColumnDefine[]{
                 new TTable.ColumnDefine(TTable.Align.MIDDLE),
@@ -71,7 +65,7 @@ public class Ls implements BaseCommand {
     public String listConsumer() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("As Consumer side:" + System.lineSeparator());
-        Collection<ConsumerModel> consumerModelList = frameworkModel.getServiceRepository().allConsumerModels();
+        Collection<ConsumerModel> consumerModelList = ApplicationModel.allConsumerModels();
 
         TTable tTable = new TTable(new TTable.ColumnDefine[]{
                 new TTable.ColumnDefine(TTable.Align.MIDDLE),

@@ -77,7 +77,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
         Response res = new Response(req.getId(), req.getVersion());
-        if (req.isBroken()) {
+        if (req.isBroken()) {  // 判断请求是否已经发生过中断(异常)
             Object data = req.getData();
 
             String msg;
@@ -97,8 +97,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         // find handler by message class.
         Object msg = req.getData();
         try {
-            CompletionStage<Object> future = handler.reply(channel, msg);
-            future.whenComplete((appResult, t) -> {
+            CompletionStage<Object> future = handler.reply(channel, msg);  // 处理调用
+            future.whenComplete((appResult, t) -> {  // 添加监听，一旦异步操作完成，就会触发该回调
                 try {
                     if (t == null) {
                         res.setStatus(Response.OK);
@@ -165,19 +165,19 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
-        if (message instanceof Request) {
+        if (message instanceof Request) {  // 处理client请求的情况
             // handle request.
             Request request = (Request) message;
             if (request.isEvent()) {
                 handlerEvent(channel, request);
             } else {
-                if (request.isTwoWay()) {
+                if (request.isTwoWay()) {  // 处理双向请求
                     handleRequest(exchangeChannel, request);
                 } else {
                     handler.received(exchangeChannel, request.getData());
                 }
             }
-        } else if (message instanceof Response) {
+        } else if (message instanceof Response) {  // 处理server响应的情况
             handleResponse(channel, (Response) message);
         } else if (message instanceof String) {
             if (isClientSide(channel)) {
@@ -185,7 +185,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                 logger.error(e.getMessage(), e);
             } else {
                 String echo = handler.telnet(channel, (String) message);
-                if (StringUtils.isNotEmpty(echo)) {
+                if (echo != null && echo.length() > 0) {
                     channel.send(echo);
                 }
             }
