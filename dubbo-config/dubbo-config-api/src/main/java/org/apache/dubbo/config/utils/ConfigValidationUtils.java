@@ -234,7 +234,7 @@ public class ConfigValidationUtils {
                 }
             }
         }
-        // 为每个标准URL生成一个兼容URL
+        // 为每个标准URL生成一个兼容URL（会生成额外一份 service-discovery-registry的registry URL, 一般用不上）
         return genCompatibleRegistries(registryList, provider);
     }
 

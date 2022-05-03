@@ -53,6 +53,7 @@ public abstract class ListenableRouter extends AbstractRouter implements Configu
         super(url);
         this.setForce(false);
         // 从配置中心读取路由规则，初始化到这里
+        // 注册中心中的规则在 org.apache.dubbo.registry.integration.RegistryDirectory.notify 中处理的
         this.init(ruleKey);
     }
 

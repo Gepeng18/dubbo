@@ -182,7 +182,7 @@ public class RouterChain<T> {
                 + ".");
         }
         BitList<Invoker<T>> finalBitListInvokers = new BitList<>(invokers, false);
-        // 处理状态路由
+        // 处理状态路由（标签路由）
         for (StateRouter stateRouter : stateRouters) {
             if (stateRouter.isEnable()) {
                 RouterCache<T> routerCache = cache.getCache().get(stateRouter.getName());

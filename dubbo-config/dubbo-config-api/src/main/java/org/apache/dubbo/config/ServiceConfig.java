@@ -363,7 +363,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 serviceMetadata
         );
 
-        // 获取所有注册中心的【标准化地址URL】与【兼容性地址URL】
+        // 获取所有注册中心的【标准化地址URL】与【兼容性地址URL】,xml中配置几个，就获得几个
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         // 遍历所有服务暴露协议(<dubbo:protocol/>）
@@ -380,7 +380,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
-        // 构建服务暴露URL要使用的map
+        // 构建服务暴露URL要使用的map (从xml中解析)
         Map<String, String> map = buildAttributes(protocolConfig);
 
         //init serviceMetadata attachments
@@ -584,6 +584,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 }
 
                 //if protocol is only injvm ,not register
+                // 不会执行到这，安全角度
                 if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
                     continue;
                 }
@@ -637,7 +638,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         if (withMetaData) {
             invoker = new DelegateProviderMetaDataInvoker(invoker, this);
         }
-        // 远程暴露
+        // 本地/远程暴露
         Exporter<?> exporter = PROTOCOL.export(invoker);
         exporters.add(exporter);
     }
@@ -652,7 +653,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 .setHost(LOCALHOST_VALUE)
                 .setPort(0)  // URL没有端口号
                 .build();
-        // 本地暴露
+        // 本地暴露 (就做了一件事：写入本地map)
         doExportUrl(local, false);
         logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry url : " + local);
     }

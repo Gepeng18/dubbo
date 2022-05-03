@@ -71,7 +71,7 @@ public class MigrationRuleHandler<T> {
             boolean success = true;
             // 根据不同迁移步骤，采用不同刷新方式
             switch (step) {
-                case APPLICATION_FIRST:  // 应用优先
+                case APPLICATION_FIRST:  // 应用优先，默认走此逻辑
                     migrationInvoker.migrateToApplicationFirstInvoker(newRule);
                     break;
                 case FORCE_APPLICATION:

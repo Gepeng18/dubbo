@@ -98,6 +98,8 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
 
+        // MigrationInvoker -> MockClusterInvoker (降级) ->  FilterChainBuilder
+        // 最终走到 AbstractClusterInvoker -> FailoverClusterInvoker
         return invoker.invoke(rpcInvocation).recreate();
     }
 }

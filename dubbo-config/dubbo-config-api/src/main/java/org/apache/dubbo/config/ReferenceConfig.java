@@ -391,6 +391,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                             urls.add(u.putAttribute(REFER_KEY, map));
                         }
                     }
+                    // 至此，urls中包含注册中心的地址和refer(即consumer)的信息
                     if (urls.isEmpty()) {
                         throw new IllegalStateException(
                                 "No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() +
@@ -400,15 +401,19 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 }
             }
 
+            // 有几个注册中心，就有几个url
             if (urls.size() == 1) {
-                // 获取provider的委托对象
+                // 获取provider的委托对象(里面可能包含多个provider的委托，这里会关联注册中心)
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
-            } else {  // 处理注册中心有多个的情况
+            } else {
+                // 处理注册中心有多个的情况
+                // invoker 代表所有注册中心的invoker，至于每个invoker中有多少个委托对象，等需要调用的时候，再从注册中心查
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
                     // For multi-registry scenarios, it is not checked whether each referInvoker is available.
                     // Because this invoker may become available later.
+                    // 每个注册中心调用一次add
                     invokers.add(REF_PROTOCOL.refer(interfaceClass, url));
 
                     if (UrlUtils.isRegistry(url)) {
@@ -416,12 +421,13 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                     }
                 }
 
-                // 若有可用的注册中心
+                // 若有可用的注册中心，这里是看最后一个可用嘛
                 if (registryURL != null) { // registry url is available
                     // for multi-subscription scenario, use 'zone-aware' policy by default
                     String cluster = registryURL.getParameter(CLUSTER_KEY, ZoneAwareCluster.NAME);
                     // The invoker wrap sequence would be: ZoneAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-                    // 由于注册中心的数量是不可变的，所以这里的Directory是静态的
+                    // 由于注册中心的数量是不可变的(之前检查过注册中心的状态，有一个不可用就启动不了)，所以数量是固定的，这里的Directory是静态的
+                    // 并且这里把多个invoker抽象成一个invoker
                     invoker = Cluster.getCluster(cluster, false).join(new StaticDirectory(registryURL, invokers));
                 } else { // not a registry url, must be direct invoke.
                     String cluster = CollectionUtils.isNotEmpty(invokers)

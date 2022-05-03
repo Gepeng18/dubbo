@@ -320,17 +320,17 @@ public class DubboProtocol extends AbstractProtocol {
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
 
         if (isServer) {
-            // 从缓存map中获取当前key对应的同异步转换对象。
+            // 从缓存map中获取当前key对应的同异步转换对象ProtocolServer。（类似于老版本的exchange）
             // 从key的值可知，一个应用中每个服务暴露协议都会对应一个同异步转换对象，
-            // 而一个同异步转换对象会对应一个Netty Server，即一个主机中每个服务暴露
-            // 协议会对应创建一个Netty Server（面试题）
+            // 而一个同异步转换对象会对应一个Netty Server，即一个主机中每个服务暴露协议会对应创建一个Netty Server（面试题）
+            // 如果dubbo中有三个service，但公用一个dubbo protocol，那就只创建一个Netty Server (只与dubbo<protocol>标签有关)
             // DCL
             ProtocolServer server = serverMap.get(key);
             if (server == null) {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
-                        // 创建同异步转换对象
+                        // 创建同异步转换对象(里面包含netty Server)
                         serverMap.put(key, createServer(url));
                     }else {
                         server.reset(url);
@@ -422,7 +422,8 @@ public class DubboProtocol extends AbstractProtocol {
 
         // create rpc invoker.
         // 创建一个与Dubbo协议相绑定的委托对象invoker，这个invoker可以与provider间建立很多的连接。
-        // 而第一个连接就会对应一个Netty Client，通过getClients(url)可以获取到其绑定的这些连接
+        // 而每一个连接就会对应一个Netty Client，通过getClients(url)可以获取到其绑定的这些连接
+        // 这里多个连接，感觉就意味着 多线程调用，所以consumer和provider之间会建立多个连接
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
 
@@ -439,11 +440,11 @@ public class DubboProtocol extends AbstractProtocol {
         // 创建的连接数量（非共享的），默认值为0，表示只有一个连接
         int connections = url.getParameter(CONNECTIONS_KEY, 0);
 
-        // ReferenceCountExchangeClient 表示可共享连接client
+        // ReferenceCountExchangeClient 表示可共享连接client (逻辑连接)
         List<ReferenceCountExchangeClient> shareClients = null;
         // if not configured, connection is shared, otherwise, one connection for one service
         if (connections == 0) {
-            // 当前连接只有一个，所以该连接是可共享的
+            // 当前连接只有一个，所以设置该连接是可共享的
             useShareConnect = true;
 
             /*
@@ -453,15 +454,14 @@ public class DubboProtocol extends AbstractProtocol {
             String shareConnectionsStr = url.getParameter(SHARE_CONNECTIONS_KEY, (String) null);
 
             // 若xml中的该属性配置不空，则直接取该值，否则从属性中获取。
-            // 注意，此时的connections表示的是共享连接数
+            // 注意，前面的connections还代表物理连接数，这里被改了，connections表示的是共享连接数(逻辑连接数)
             connections = Integer.parseInt(StringUtils.isBlank(shareConnectionsStr) ?
                 ConfigUtils.getProperty(SHARE_CONNECTIONS_KEY,  DEFAULT_SHARE_CONNECTIONS) : shareConnectionsStr);
             // 创建相应的共享连接
             shareClients = getSharedClient(url, connections);
         }
 
-        // 代码走到这里，connections的值一定是大于0的，只不过，其可能代表的
-        // 是共享连接数量或非共享连接数量
+        // 代码走到这里，connections的值一定是大于0的，只不过，其代表的可能是 共享连接数量或非共享连接数量
         ExchangeClient[] clients = new ExchangeClient[connections];
 
         for (int i = 0; i < clients.length; i++) {
@@ -510,6 +510,7 @@ public class DubboProtocol extends AbstractProtocol {
         List<ReferenceCountExchangeClient> typedClients = null;
 
         synchronized (referenceClientMap) {
+            // for基本没啥用
             for (; ; ) {
                 clients = referenceClientMap.get(key);
 
@@ -533,6 +534,7 @@ public class DubboProtocol extends AbstractProtocol {
                     }
 
                     // 若当前clients为其它情况，则将Object写入到当前key对应的value
+                    // 理论上不会出现这种情况的
                 } else {
                     referenceClientMap.put(key, PENDING_OBJECT);
                     break;
@@ -650,7 +652,7 @@ public class DubboProtocol extends AbstractProtocol {
     private ReferenceCountExchangeClient buildReferenceCountExchangeClient(URL url) {
         // 创建一个client，这个client最终会创建出一个Netty Client
         ExchangeClient exchangeClient = initClient(url);
-        // 将该client封装为一个共享连接client
+        // 将该client封装为一个共享连接client （物理连接 -> 逻辑连接）
         return new ReferenceCountExchangeClient(exchangeClient);
     }
 
@@ -682,7 +684,7 @@ public class DubboProtocol extends AbstractProtocol {
                 client = new LazyConnectExchangeClient(url, requestHandler);
 
             } else {
-                // 正常连接
+                // 正常连接，基本都走这里
                 client = Exchangers.connect(url, requestHandler);
             }
 

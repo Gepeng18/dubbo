@@ -178,7 +178,7 @@ public class ConditionRouter extends AbstractRouter {
     @Override
     public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation)
             throws RpcException {
-        // 若router不可用，则直接返回所有invoker
+        // 若router不可用(规则都不起作用了，所以就不过滤了呗，返回所有的)，则直接返回所有invoker
         if (!enabled) {
             return invokers;
         }

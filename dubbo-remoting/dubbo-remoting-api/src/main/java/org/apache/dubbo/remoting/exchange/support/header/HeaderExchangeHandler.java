@@ -77,7 +77,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
         Response res = new Response(req.getId(), req.getVersion());
-        if (req.isBroken()) {  // 判断请求是否已经发生过中断(异常)
+        if (req.isBroken()) {
+            // 判断请求是否已经发生过中断(异常)
             Object data = req.getData();
 
             String msg;
@@ -171,7 +172,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             if (request.isEvent()) {
                 handlerEvent(channel, request);
             } else {
-                if (request.isTwoWay()) {  // 处理双向请求
+                if (request.isTwoWay()) {
+                    // 处理双向请求
                     handleRequest(exchangeChannel, request);
                 } else {
                     handler.received(exchangeChannel, request.getData());

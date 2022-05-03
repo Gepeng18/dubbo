@@ -121,7 +121,7 @@ public class NettyServer extends AbstractServer implements RemotingServer {
                                 .addLast("handler", nettyServerHandler);
                     }
                 });
-        // bind  启动Netty Server
+        // bind  启动Netty Server，端口就是dubbo的服务暴露的端口 <dubbo:protocol>中指定的端口号
         ChannelFuture channelFuture = bootstrap.bind(getBindAddress());
         channelFuture.syncUninterruptibly();
         channel = channelFuture.channel();

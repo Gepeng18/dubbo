@@ -88,13 +88,16 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         inv.setAttachment(PATH_KEY, getUrl().getPath());
         inv.setAttachment(VERSION_KEY, version);
 
+        // 同异步转化器
         ExchangeClient currentClient;  // 一个client连接着一个Netty Client
         if (clients.length == 1) {  // 若只有一个client，则直接选择
             currentClient = clients[0];
         } else {  // 若有多个client，则轮询选择一个
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
-        try {  // 若只发请求，无需server给出响应，则为oneway，否则为twoway
+        try {
+            // 若只发请求，无需server给出响应，则为oneway，否则为twoway
+            // 给出响应和是否有返回值无关，给出响应也可能没有返回值，即只返回相应状态，不返回响应体
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
             int timeout = calculateTimeout(invocation, methodName);
             invocation.put(TIMEOUT_KEY, timeout);
@@ -104,7 +107,8 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                 return AsyncRpcResult.newDefaultAsyncResult(invocation);
             } else {
                 ExecutorService executor = getCallbackExecutor(getUrl(), inv);
-                CompletableFuture<AppResponse> appResponseFuture =  // 通过client提交请求
+                // 通过client提交请求
+                CompletableFuture<AppResponse> appResponseFuture =
                         currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);
                 // save for 2.6.x compatibility, for example, TraceFilter in Zipkin uses com.alibaba.xxx.FutureAdapter
                 FutureContext.getContext().setCompatibleFuture(appResponseFuture);

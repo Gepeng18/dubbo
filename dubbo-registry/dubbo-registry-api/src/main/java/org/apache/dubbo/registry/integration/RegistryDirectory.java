@@ -211,6 +211,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             }
 
             // 这段代码可以增加provider的可用性
+            // 即invokerUrls是从zk中拿的，provider本身没挂，但是注册到zk上时，失败了
             if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
                 invokerUrls.addAll(this.cachedInvokerUrls);
             } else {
@@ -290,7 +291,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
      * @return null : no routers ,do nothing
      * else :routers list
      */
-    private Optional<List<Router>> toRouters(List<URL> urls) {
+    private Optional<List<Router>>  toRouters(List<URL> urls) {
         if (urls == null || urls.isEmpty()) {
             return Optional.empty();
         }

@@ -222,7 +222,7 @@ public class RegistryProtocol implements Protocol {
         // decide if we need to delay publish
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
         if (register) {
-            // 注册到注册中心
+            // 注册到注册中心 (调用 org.apache.dubbo.registry.support.FailbackRegistry.register)
             register(registry, registeredProviderUrl);
         }
 
@@ -519,14 +519,14 @@ public class RegistryProtocol implements Protocol {
             parameters.remove(REGISTER_IP_KEY), 0, getPath(parameters, type), parameters);
         if (directory.isShouldRegister()) {
             directory.setRegisteredConsumerUrl(urlToRegistry);
-            // 将当前consumer注册到注册中心
+            // 将当前consumer注册到注册中心(zk中这时候只有consumer节点)
             registry.register(directory.getRegisteredConsumerUrl());
         }
-        // 将所有RouterFactory激活扩展类创建的router添加到directory
+        // 将所有RouterFactory激活扩展类创建的router(5个)添加到directory
         directory.buildRouterChain(urlToRegistry);
         // 服务订阅
         directory.subscribe(toSubscribeUrl(urlToRegistry));
-        // 将多个invoker伪装为一个具有复合功能的invoker
+        // 将多个invoker伪装为一个具有复合功能的invoker（就是将动态列表进行整合）
         return (ClusterInvoker<T>) cluster.join(directory);
     }
 

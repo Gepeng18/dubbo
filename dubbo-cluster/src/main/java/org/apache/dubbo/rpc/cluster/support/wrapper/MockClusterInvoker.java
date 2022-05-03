@@ -142,7 +142,7 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
         Result result = null;
         Invoker<T> minvoker;
 
-        // 获取最新的invoker列表
+        // 获取最新的invoker列表(从zk中取)
         List<Invoker<T>> mockInvokers = selectMockInvoker(invocation);
         if (CollectionUtils.isEmpty(mockInvokers)) {
             // 若仍没有可用的invoker，则创建一个降级invoker
