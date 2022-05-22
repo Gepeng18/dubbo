@@ -53,6 +53,8 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
+            <!--client的版本需要和nacos的server版本对应上-->
+            <version>1.4.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.dubbo</groupId>
