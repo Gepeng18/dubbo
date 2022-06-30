@@ -14,12 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.dubbo.rpc.service;
 
-import org.apache.dubbo.common.utils.StringUtils;
+import com.alibaba.dubbo.common.utils.StringUtils;
 
-@Deprecated
+/**
+ * GenericException
+ *
+ * @export
+ */
 public class GenericException extends RuntimeException {
 
     private static final long serialVersionUID = -1182299763306599962L;

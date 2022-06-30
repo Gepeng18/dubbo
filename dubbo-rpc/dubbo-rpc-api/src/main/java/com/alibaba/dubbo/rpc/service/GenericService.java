@@ -14,13 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.dubbo.rpc.service;
 
-@Deprecated
-public interface GenericService extends org.apache.dubbo.rpc.service.GenericService {
+/**
+ * Generic service interface
+ *
+ * 泛化服务接口
+ *
+ * @export
+ */
+public interface GenericService {
 
-    @Override
-    Object $invoke(String method, String[] parameterTypes, Object[] args)
-            throws com.alibaba.dubbo.rpc.service.GenericException;
+    /**
+     * Generic invocation
+     *
+     * 泛化调用
+     *
+     * @param method         Method name, e.g. findPerson. If there are overridden methods, parameter info is
+     *                       required, e.g. findPerson(java.lang.String)
+     *                       方法名
+     * @param parameterTypes Parameter types
+     *                       参数类型数组
+     * @param args           Arguments
+     *                       参数数组
+     * @return invocation return value 调用结果
+     * @throws Throwable potential exception thrown from the invocation
+     */
+    Object $invoke(String method, String[] parameterTypes, Object[] args) throws GenericException;
+
 }

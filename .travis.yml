@@ -1,30 +1,13 @@
-sudo: false # faster builds
-os: linux
-dist: focal
-arch: arm64-graviton2
-virt: lxd
-group: edge
-
 language: java
-jdk: openjdk11
+sudo: false # faster builds
 
-cache:
-  directories:
-    - $HOME/.m2
+jdk:
+    - oraclejdk8
+    - openjdk7
 
-install: true
-
-branches:
-  only:
-    - master
-
-before_script:
-  - rm -rf $HOME/.m2/repository/org/glassfish/javax.el/3.0.1-b08
-
-script: if [[ "${TRAVIS_EVENT_TYPE}" == "cron" ]]; then travis_wait 60 ./mvnw --batch-mode -U -e --no-transfer-progress clean test -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=5 -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true;  fi
+script:
+    - mvn clean package
+    - mvn cobertura:cobertura
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-
-after_failure:
-  - echo "build failed!"
