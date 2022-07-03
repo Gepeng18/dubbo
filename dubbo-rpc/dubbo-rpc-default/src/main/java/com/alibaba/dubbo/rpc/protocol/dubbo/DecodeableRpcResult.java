@@ -38,6 +38,7 @@ import java.lang.reflect.Type;
 
 /**
  * 可解码的 RpcResult 实现类
+ * 当服务提供者者，返回服务消费者调用结果，前者编码的 RpcResult 对象，后者解码成 DecodeableRpcResult 对象。
  */
 public class DecodeableRpcResult extends RpcResult implements Codec, Decodeable {
 

@@ -42,6 +42,7 @@ public class AdaptiveCompiler implements Compiler {
         Compiler compiler;
         // 获得 Compiler 的 ExtensionLoader 对象。
         ExtensionLoader<Compiler> loader = ExtensionLoader.getExtensionLoader(Compiler.class);
+        // 声明 name 变量，引用 DEFAULT_COMPILER 的值。避免在【第 19 至 20 行】的代码过程中，值变了。
         String name = DEFAULT_COMPILER; // copy reference
         // 使用设置的拓展名，获得 Compiler 拓展对象
         if (name != null && name.length() > 0) {

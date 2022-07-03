@@ -59,6 +59,14 @@ public class FutureAdapter<V> implements Future<V> {
         return future.isDone();
     }
 
+    /**
+     * 这个适配器很牛逼，因为dubbo把FutureAdapter返回给用户，FutureAdapter实现了future
+     * 所以用户把FutureAdapter当作future使用，而用户调用 future.get()时，
+     * 其实adapter调用了 ResponseFuture.get（dubbo自己的逻辑）
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
     @Override
     @SuppressWarnings("unchecked")
     public V get() throws InterruptedException, ExecutionException {

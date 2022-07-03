@@ -39,6 +39,7 @@ import java.util.Map;
 
 /**
  * 可解码的 RpcInvocation 实现类
+ * 当服务消费者，调用服务提供者，前者编码的 RpcInvocation 对象，后者解码成 DecodeableRpcInvocation 对象。
  */
 public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Decodeable {
 

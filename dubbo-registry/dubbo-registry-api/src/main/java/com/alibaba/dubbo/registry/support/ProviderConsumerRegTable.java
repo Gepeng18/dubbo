@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 服务提供者和消费者注册表
+ * 服务提供者和消费者注册表，存储 JVM 进程内自己的服务提供者和消费者的 Invoker 。
  *
  * 用于在线运维命令 QOS 使用，参见文档：http://dubbo.io/books/dubbo-user-book/references/qos.html
  *

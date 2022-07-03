@@ -28,7 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * InvokerWrapper
  *
- * 代理 Invoker 对象的抽象类
+ * 【代理】 Invoker 对象的抽象类
  */
 public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
@@ -78,8 +78,10 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
     public Result invoke(Invocation invocation) throws RpcException {
         try {
+            // 调用 #doInvoke(..) 抽象方法，执行调用，返回调用结果
             return new RpcResult(doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments()));
         } catch (InvocationTargetException e) {
+            // 发生 InvocationTargetException 异常，创建 RpcResult 对象包装。
             return new RpcResult(e.getTargetException());
         } catch (Throwable e) {
             throw new RpcException("Failed to invoke remote proxy method " + invocation.getMethodName() + " to " + getUrl() + ", cause: " + e.getMessage(), e);

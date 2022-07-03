@@ -101,6 +101,8 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
         return stateListeners;
     }
 
+    // 一个path会有多个监听器进行监听
+    // childListeners: Map<String, Map<ChildListener（本函数的第二个参数）, TargetChildListener（根据path和listener create）>>
     @Override
     public List<String> addChildListener(String path, final ChildListener listener) {
         // 获得路径下的监听器数组
@@ -113,10 +115,11 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
         TargetChildListener targetListener = listeners.get(listener);
         // 监听器不存在，进行创建
         if (targetListener == null) {
+            // createTargetChildListener是抽象方法，创建真正的 ChildListener 对象。因为，每个 Zookeeper 的库，实现不同。
             listeners.putIfAbsent(listener, createTargetChildListener(path, listener));
             targetListener = listeners.get(listener);
         }
-        // 向 Zookeeper ，真正发起订阅
+        // 取出刚刚创建的真正的ChildListener对象，向 Zookeeper ，真正发起订阅
         return addTargetChildListener(path, targetListener);
     }
 

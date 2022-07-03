@@ -28,6 +28,7 @@ public abstract class AbstractChannelHandlerDelegate implements ChannelHandlerDe
 
     /**
      * 通道处理器
+     * 实现了ChannelHandler，同时构造函数传入ChannelHandler，典型的装饰器模式
      */
     protected ChannelHandler handler;
 

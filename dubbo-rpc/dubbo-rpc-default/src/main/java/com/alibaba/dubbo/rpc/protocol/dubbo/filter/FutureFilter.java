@@ -38,6 +38,7 @@ import java.util.concurrent.Future;
 
 /**
  * EventFilter
+ * 只有服务消费者才生效该过滤器。
  *
  * 事件通知过滤器，可参见文档《Dubbo 用户指南 —— 事件通知》https://dubbo.gitbooks.io/dubbo-user-book/demos/events-notify.html
  */
@@ -55,7 +56,7 @@ public class FutureFilter implements Filter {
         fireInvokeCallback(invoker, invocation);
         // need to configure if there's return value before the invocation in order to help invoker to judge if it's
         // necessary to return future.
-        // 调用方法
+        // 调用服务提供者，即 Dubbo RPC
         Result result = invoker.invoke(invocation);
 
         // 触发回调方法
@@ -64,6 +65,7 @@ public class FutureFilter implements Filter {
         } else { // 同步回调
             syncCallback(invoker, invocation, result);
         }
+        // 返回结果。如果是异步调用或单向调用，所以返回结果是空的
         return result;
     }
 

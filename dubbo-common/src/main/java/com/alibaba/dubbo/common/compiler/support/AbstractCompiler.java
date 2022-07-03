@@ -60,7 +60,7 @@ public abstract class AbstractCompiler implements Compiler {
         String className = pkg != null && pkg.length() > 0 ? pkg + "." + cls : cls;
         // 加载类，若已经存在
         try {
-            // 加载成功，说明已存在
+            // 加载成功，说明类已存在（这可能就是那些$Adaptive能debug的原因）
             return Class.forName(className, true, ClassHelper.getCallerClassLoader(getClass())); // classloader 为调用方的
         } catch (ClassNotFoundException e) { // 类不存在，说明可能未编译过，进行编译
             // 代码格式不正确

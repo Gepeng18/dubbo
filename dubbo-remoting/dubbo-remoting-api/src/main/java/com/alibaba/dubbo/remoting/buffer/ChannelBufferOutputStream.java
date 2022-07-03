@@ -20,7 +20,7 @@ package com.alibaba.dubbo.remoting.buffer;
 import java.io.OutputStream;
 
 /**
- * 通道 Buffer 输出流
+ * 通道 Buffer 输出流，实现 OutputStream 接口
  */
 public class ChannelBufferOutputStream extends OutputStream {
 

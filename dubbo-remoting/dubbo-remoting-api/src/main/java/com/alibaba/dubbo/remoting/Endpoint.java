@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Endpoint. (API/SPI, Prototype, ThreadSafe)
+ * 从中文上解释来说是，“端点”。从字面上来看，不太容易理解。在 dubbo-remoting-api 中，一个 Client 或 Server ，都是一个 Endpoint
  *
  * Endpoint 接口
  *

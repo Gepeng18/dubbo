@@ -84,7 +84,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
         this.root = group;
         // 创建 Zookeeper Client
         zkClient = zookeeperTransporter.connect(url);
-        // 添加 StateListener 对象。该监听器，在重连时，调用恢复方法。
+        // 添加 StateListener 对象。该监听器，在重连时，调用恢复方法,重新发起注册和订阅。
         zkClient.addStateListener(new StateListener() {
             public void stateChanged(int state) {
                 if (state == RECONNECTED) {
@@ -149,7 +149,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
-            // 处理所有 Service 层的发起订阅，例如监控中心的订阅
+            // do 处理所有 Service 层的发起订阅，例如监控中心的订阅
+            // 这里主要是监听root层，因为root层下面有很多service，一旦root的child有变化，则表明有service新增，调用subscribe方法
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
                 // 获得 url 对应的监听器集合
@@ -159,6 +160,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     listeners = zkListeners.get(url);
                 }
                 // 获得 ChildListener 对象
+                // 获得 listener( NotifyListener ) 对应的 ChildListener 对象。在 Service 层发生变更时，
+                // 若是新增 Service 接口全名时（即新增服务），调用 #subscribe(url, listener) 方法，
+                // 发起该 Service 层的订阅。是否是新增的服务，通过 anyServices 属性来判断。
                 ChildListener zkListener = listeners.get(listener);
                 if (zkListener == null) { // 不存在 ChildListener 对象，进行创建 ChildListener 对象
                     listeners.putIfAbsent(listener, new ChildListener() {
@@ -189,12 +193,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
                                 Constants.CHECK_KEY, String.valueOf(false)), listener);
                     }
                 }
-            // 处理指定 Service 层的发起订阅，例如服务消费者的订阅
+            // do 处理指定 Service 层的所有type发起订阅，例如服务消费者的订阅，
             } else {
-                // 子节点数据数组
+                // 子节点数据数组，即 Service 层下的所有 URL 。
                 List<URL> urls = new ArrayList<URL>();
                 // 循环分类数组
-                for (String path : toCategoriesPath(url)) {
+                for (String typePath : toCategoriesPath(url)) {
                     // 获得 url 对应的监听器集合
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                     if (listeners == null) { // 不存在，进行创建
@@ -202,6 +206,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         listeners = zkListeners.get(url);
                     }
                     // 获得 ChildListener 对象
+                    // 获得 listener( NotifyListener ) 对应的 ChildListener 对象。在 URL 层发生变更时，
+                    // 会调用 NotifyListener#notify(url, listener, currentChilds) 方法，回调 NotifyListener 的逻辑。
+                    // 酱紫，如果 Service 下增加新的服务提供者实例( 新的 URL )，服务消费者可创建新的 Invoker 对象，用于调用该服务提供者。
                     ChildListener zkListener = listeners.get(listener);
                     if (zkListener == null) { // 不存在 ChildListener 对象，进行创建 ChildListener 对象
                         listeners.putIfAbsent(listener, new ChildListener() {
@@ -213,15 +220,16 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         zkListener = listeners.get(listener);
                     }
                     // 创建 Type 节点。该节点为持久节点。
-                    zkClient.create(path, false);
+                    zkClient.create(typePath, false);
                     // 向 Zookeeper ，PATH 节点，发起订阅
-                    List<String> children = zkClient.addChildListener(path, zkListener);
+                    List<String> children = zkClient.addChildListener(typePath, zkListener);
                     // 添加到 `urls` 中
                     if (children != null) {
-                        urls.addAll(toUrlsWithEmpty(url, path, children));
+                        urls.addAll(toUrlsWithEmpty(url, typePath, children));
                     }
                 }
                 // 首次全量数据获取完成时，调用 `#notify(...)` 方法，回调 NotifyListener
+                // 酱紫，服务消费者可创建所有的 Invoker 对象，用于调用服务提供者们。
                 notify(url, listener, urls);
             }
         } catch (Throwable e) {
@@ -241,6 +249,13 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * 查询符合条件的已注册数据，与订阅的推模式相对应，这里为拉模式，只返回一次结果。
+     *
+     * @param url 查询条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&application=kylin
+     * @return 已注册信息列表，可能为空，含义同{@link com.alibaba.dubbo.registry.NotifyListener#notify(List<URL>)}的参数。
+     * @see com.alibaba.dubbo.registry.NotifyListener#notify(List)
+     */
     @Override
     public List<URL> lookup(URL url) {
         if (url == null) {
@@ -249,8 +264,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
         try {
             // 循环分类数组，获得所有的 URL 数组
             List<String> providers = new ArrayList<String>();
-            for (String path : toCategoriesPath(url)) {
-                List<String> children = zkClient.getChildren(path);
+            for (String type : toCategoriesPath(url)) {
+                List<String> children = zkClient.getChildren(type);
                 if (children != null) {
                     providers.addAll(children);
                 }
@@ -302,12 +317,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
     }
 
     /**
-     * 获得分类路径数组
+     * 获得分类数组
      *
      * Root + Service + Type
      *
      * @param url URL
-     * @return 分类路径数组
+     * @return 分类数组
      */
     private String[] toCategoriesPath(URL url) {
         // 获得分类数组

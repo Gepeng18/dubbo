@@ -103,6 +103,9 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
 
     protected abstract void doClose() throws Throwable;
 
+    /**
+     * Server 实现 Resetable 接口，在实现 #reset(url) 方法，用于根据新传入的 url 属性，重置自己内部的一些属性，例如 AbstractServer#reset(url) 方法。
+     */
     @Override
     public void reset(URL url) {
         if (url == null) {
@@ -158,6 +161,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         super.setUrl(getUrl().addParameters(url.getParameters()));
     }
 
+    // 发送消息
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
         // 获得所有的客户端的通道
@@ -211,6 +215,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         return idleTimeout;
     }
 
+    // 被客户端连接时
     @Override
     public void connected(Channel ch) throws RemotingException {
         // If the server has entered the shutdown process, reject any new connection

@@ -50,10 +50,11 @@ public final class DubboCountCodec implements Codec2 {
         int save = buffer.readerIndex();
         // 创建 MultiMessage 对象
         MultiMessage result = MultiMessage.create();
+        // 循环解析消息，直到结束。
         do {
             // 解码
             Object obj = codec.decode(channel, buffer);
-            // 输入不够，重置读进度
+            // 字节数组不够，重置读进度，结束解析
             if (Codec2.DecodeResult.NEED_MORE_INPUT == obj) {
                 buffer.readerIndex(save);
                 break;

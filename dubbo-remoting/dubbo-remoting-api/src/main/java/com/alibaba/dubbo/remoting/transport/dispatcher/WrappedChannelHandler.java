@@ -40,7 +40,7 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
     protected static final Logger logger = LoggerFactory.getLogger(WrappedChannelHandler.class);
 
     /**
-     * 共享线程池
+     * 共享线程池，暂时不知道它的作用
      */
     protected static final ExecutorService SHARED_EXECUTOR = Executors.newCachedThreadPool(new NamedThreadFactory("DubboSharedHandler", true));
 
@@ -61,10 +61,10 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
         this.handler = handler;
         this.url = url;
 
-        // 创建线程池
+        // Dubbo SPI Adaptive 机制，创建线程池。
         executor = (ExecutorService) ExtensionLoader.getExtensionLoader(ThreadPool.class).getAdaptiveExtension().getExecutor(url);
 
-        // 添加线程池到 DataStore 中
+        // 添加线程池到 DataStore 中。 这就是上文 AbstractClient 或 AbstractServer 从 DataStore 获得线程池的方式
         String componentKey = Constants.EXECUTOR_SERVICE_COMPONENT_KEY;
         if (Constants.CONSUMER_SIDE.equalsIgnoreCase(url.getParameter(Constants.SIDE_KEY))) {
             componentKey = Constants.CONSUMER_SIDE;

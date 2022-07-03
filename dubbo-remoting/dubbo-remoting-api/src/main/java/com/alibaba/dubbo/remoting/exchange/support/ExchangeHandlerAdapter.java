@@ -25,6 +25,7 @@ import com.alibaba.dubbo.remoting.telnet.support.TelnetHandlerAdapter;
  * ExchangeHandlerAdapter
  *
  * 信息交换处理器适配器抽象类
+ * 在 DubboProtocol 、ThirftProtocol 中，都会基于 ExchangeHandlerAdapter 实现自己的处理器，处理请求，返回结果。
  */
 public abstract class ExchangeHandlerAdapter extends TelnetHandlerAdapter implements ExchangeHandler {
 

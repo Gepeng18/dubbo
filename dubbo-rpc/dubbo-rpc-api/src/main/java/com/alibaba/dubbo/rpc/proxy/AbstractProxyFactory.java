@@ -30,6 +30,7 @@ import com.alibaba.dubbo.rpc.service.EchoService;
  */
 public abstract class AbstractProxyFactory implements ProxyFactory {
 
+    // 获得需要生成代理的接口们
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
         Class<?>[] interfaces = null;
         // TODO 8022 芋艿
@@ -45,7 +46,8 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
                 }
             }
         }
-        // 增加 EchoService 接口，用于回生测试。参见文档《回声测试》https://dubbo.gitbooks.io/dubbo-user-book/demos/echo-service.html
+        // 在原有 Invoker 对应关联的 Service 接口之上，增加 EchoService 接口，用于回生测试。
+        // 参见文档《回声测试》https://dubbo.gitbooks.io/dubbo-user-book/demos/echo-service.html
         if (interfaces == null) {
             interfaces = new Class<?>[]{invoker.getInterface(), EchoService.class};
         }

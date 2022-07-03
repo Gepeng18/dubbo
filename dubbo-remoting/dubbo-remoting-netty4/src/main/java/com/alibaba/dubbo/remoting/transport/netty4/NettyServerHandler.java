@@ -37,6 +37,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     /**
      * Dubbo Channel 集合
+     * 连接到服务器的 Dubbo Channel 集合。
      */
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>(); // <ip:port, channel>
     /**
@@ -45,6 +46,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     private final URL url;
     /**
      * Dubbo ChannelHandler
+     * NettyServerHandler 对每个事件的处理，会调用 handler 对应的方法。
      */
     private final ChannelHandler handler;
 
@@ -63,6 +65,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
         return channels;
     }
 
+    // 该类下面的每个实现的方法，处理都比较类似，一般是提交给 handler 做相应的处理。艿艿已经添加了代码注释，胖友可以自己看看
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         // 交给下一个节点处理

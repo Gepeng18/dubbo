@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 
 /**
  * 基于 Netty ByteBuf 的 ChannelBuffer 实现类
+ * 每个方法，直接调用 ByteBuf 对应的方法。 ChannelBuffer 是以 ByteBuf 为原型，设计的接口 API 。
  */
 public class NettyBackedChannelBuffer implements ChannelBuffer {
 

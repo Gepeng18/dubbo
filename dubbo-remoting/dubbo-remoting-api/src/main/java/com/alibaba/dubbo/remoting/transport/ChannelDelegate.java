@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 
 /**
  * ChannelDelegate
+ * 目前 Dubbo 中，暂未用到。
  *
  */
 public class ChannelDelegate implements Channel {

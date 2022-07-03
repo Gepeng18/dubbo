@@ -25,6 +25,7 @@ import com.alibaba.dubbo.remoting.Transporter;
 
 /**
  * 基于 Netty4 的网络传输实现类
+ * NettyTransporter 基于 Dubbo SPI 机制加载
  */
 public class NettyTransporter implements Transporter {
 

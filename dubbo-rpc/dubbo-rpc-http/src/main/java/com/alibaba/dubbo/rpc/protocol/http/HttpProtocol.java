@@ -59,12 +59,13 @@ public class HttpProtocol extends AbstractProxyProtocol {
     private final Map<String, HttpServer> serverMap = new ConcurrentHashMap<String, HttpServer>();
     /**
      * Spring HttpInvokerServiceExporter 集合
+     * HttpInvokerServiceExporter 集合。请求处理过程为 HttpServer => DispatcherServlet => InternalHandler => HttpInvokerServiceExporter
      *
      * key：path 服务名
      */
     private final Map<String, HttpInvokerServiceExporter> skeletonMap = new ConcurrentHashMap<String, HttpInvokerServiceExporter>();
     /**
-     * HttpBinder$Adaptive 对象
+     * HttpBinder$Adaptive 对象，通过 #setHttpBinder(httpBinder) 方法，Dubbo SPI 调用设置。
      */
     private HttpBinder httpBinder;
 
@@ -110,6 +111,8 @@ public class HttpProtocol extends AbstractProxyProtocol {
         };
     }
 
+    // 基于HttpClient, 作为通信客户端。
+    // 具体 RPC 调用的实现，在父类 #refer() 方法里。
     @Override
     @SuppressWarnings("unchecked")
     protected <T> T doRefer(final Class<T> serviceType, final URL url) throws RpcException {
@@ -117,8 +120,10 @@ public class HttpProtocol extends AbstractProxyProtocol {
         final HttpInvokerProxyFactoryBean httpProxyFactoryBean = new HttpInvokerProxyFactoryBean();
         httpProxyFactoryBean.setServiceUrl(url.toIdentityString());
         httpProxyFactoryBean.setServiceInterface(serviceType);
-        // 创建执行器 SimpleHttpInvokerRequestExecutor 对象
+        // 获得 client 配置项，根据该配置项，创建对应的执行器。
+        // "simple" 和 "commons" 两者的差异点在于使用的 HttpClient 不同，前者使用 JDK HttpClient ，后者使用 Apache HttpClient 。
         String client = url.getParameter(Constants.CLIENT_KEY);
+        // "simple"：创建执行器 SimpleHttpInvokerRequestExecutor 对象
         if (client == null || client.length() == 0 || "simple".equals(client)) {
             SimpleHttpInvokerRequestExecutor httpInvokerRequestExecutor = new SimpleHttpInvokerRequestExecutor() {
                 protected void prepareConnection(HttpURLConnection con,
@@ -129,7 +134,7 @@ public class HttpProtocol extends AbstractProxyProtocol {
                 }
             };
             httpProxyFactoryBean.setHttpInvokerRequestExecutor(httpInvokerRequestExecutor);
-        // 创建执行器 HttpComponentsHttpInvokerRequestExecutor 对象
+        // "commons"：创建执行器 HttpComponentsHttpInvokerRequestExecutor 对象
         } else if ("commons".equals(client)) {
             HttpComponentsHttpInvokerRequestExecutor httpInvokerRequestExecutor = new HttpComponentsHttpInvokerRequestExecutor();
             httpInvokerRequestExecutor.setReadTimeout(url.getParameter(Constants.CONNECT_TIMEOUT_KEY, Constants.DEFAULT_CONNECT_TIMEOUT));
@@ -142,6 +147,7 @@ public class HttpProtocol extends AbstractProxyProtocol {
         return (T) httpProxyFactoryBean.getObject();
     }
 
+    // 将异常，翻译成 Dubbo 异常码。
     @Override
     @SuppressWarnings("Duplicates")
     protected int getErrorCode(Throwable e) {

@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Registry 抽象类，实现了如下方法：
  *
  * 1、通用的注册、订阅、查询、通知等方法
- * 2、读取和持久化注册数据到文件，以 properties 格式存储
+ * 2、读取和持久化注册数据到文件，以 properties 格式存储， 应用于，重启时，无法从注册中心加载服务提供者列表等信息时，从该文件中读取。
  */
 public abstract class AbstractRegistry implements Registry {
 
@@ -74,6 +74,15 @@ public abstract class AbstractRegistry implements Registry {
      *
      *  1. 其中特殊的 key 值 .registies 记录注册中心列表 TODO 8019 芋艿，特殊的 key 是
      *  2. 其它均为 {@link #notified} 服务提供者列表
+     *
+     数据流向
+     启动时，从 file 读取数据到 properties 中。
+     注册中心数据发生变更时，通知到 Registry 后，修改 properties 对应的值，并写入 file 。
+     数据键值
+     大多数情况下，键为服务消费者的 URL 的服务键( URL#serviceKey() )，对应的值为服务提供者列表、路由规则列表、配置规则列表。
+     特殊情况下，【TODO 8019】.registies
+     因为值会存在为列表的情况，使用空格( URL_SEPARATOR ) 分隔。
+     *
      */
     // Local disk cache, where the special key value.registies records the list of registry centers, and the others are the list of notified service providers
     private final Properties properties = new Properties();
@@ -91,6 +100,7 @@ public abstract class AbstractRegistry implements Registry {
     private final boolean syncSaveFile;
     /**
      * 数据版本号
+     * 因为每次写入 file 是全量，而不是增量写入，通过版本号，避免老版本覆盖新版本。
      *
      * {@link #properties}
      */
@@ -476,8 +486,14 @@ public abstract class AbstractRegistry implements Registry {
 
     /**
      * 通知监听器，URL 变化结果。
+     * do 这里我感觉 notify 方法的入参是从注册中心拿的数据，然后将数据替换到notified(本地变量),然后再写到文件中
      *
      * 数据流向 `urls` => {@link #notified} => {@link #properties} => {@link #file}
+     *
+     * 注意两点：
+     * 第一，向注册中心发起订阅后，会获取到全量数据，此时会被调用 #notify(...) 方法，即 Registry 获取到了全量数据。
+     *      这里说的全量，即本函数入参每次传入的 urls 的“全量”，指的是至少要是一个分类的全量，而不一定是全部数据。
+     * 第二，每次注册中心发生变更时，会调用 #notify(...) 方法，虽然变化是增量，调用这个方法的调用方，已经进行处理，传入的 urls 依然是全量的。
      *
      * @param url 消费者 URL
      * @param listener 监听器
@@ -530,7 +546,8 @@ public abstract class AbstractRegistry implements Registry {
             categoryNotified.put(category, categoryList);
             // 保存到文件
             saveProperties(url);
-            // 通知监听器
+            // 通知监听器处理。例如，有新的服务提供者启动时，被通知，创建新的 Invoker 对象
+            // 这个categoryList可以认为是zk中某个type下的所有url
             listener.notify(categoryList);
         }
     }

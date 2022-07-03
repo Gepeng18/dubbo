@@ -36,6 +36,9 @@ public class HeaderExchanger implements Exchanger {
 
     @Override
     public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+        // 1、传入的 handler 处理器，内嵌到 HeaderExchangeHandler ，再进一步内嵌到 DecodeHandler 中。
+        // 所以，处理器的顺序是：DecodeHandler => HeaderExchangeHandler => ExchangeHandler( handler ) 。
+        // 2、通过 Transporters#connect(url, handler) 方法，创建通信 Client ，内嵌到 HeaderExchangeClient 中。
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }
 

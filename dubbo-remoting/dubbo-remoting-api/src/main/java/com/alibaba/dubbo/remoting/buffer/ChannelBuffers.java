@@ -20,7 +20,7 @@ package com.alibaba.dubbo.remoting.buffer;
 import java.nio.ByteBuffer;
 
 /**
- * Buffer 工具类
+ * Buffer 工具类, 提供创建、比较 ChannelBuffer 等公用方法
  */
 public final class ChannelBuffers {
 

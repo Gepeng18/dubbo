@@ -97,7 +97,8 @@ public class Response {
      */
     private byte mStatus = OK;
     /**
-     * 是否事件
+     * 是否是事件
+     * 和 Request 内置了一样的事件，但是 READONLY_EVENT 并未使用。因为目前，只读事件，无需响应。
      */
     private boolean mEvent = false;
     /**

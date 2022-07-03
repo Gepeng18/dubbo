@@ -93,7 +93,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         } else {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
-        // 远程调用
+        // do 远程调用，下面的代码真的是经典
         try {
             // 获得是否异步调用
             boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);
@@ -104,7 +104,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             // 单向调用
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
-                currentClient.send(inv, isSent);
+                currentClient.send(inv, isSent);  // 注意是send
                 RpcContext.getContext().setFuture(null);
                 return new RpcResult();
             // 异步调用

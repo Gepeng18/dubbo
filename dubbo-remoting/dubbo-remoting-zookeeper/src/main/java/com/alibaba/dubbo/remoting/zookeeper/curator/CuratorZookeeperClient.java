@@ -60,6 +60,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
             }
             client = builder.build();
             // 添加连接监听器
+            // 在连接状态发生变化时，调用 #stateChange(state) 方法，进行 StateListener 的回调。
             client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                 public void stateChanged(CuratorFramework client, ConnectionState state) {
                     if (state == ConnectionState.LOST) {

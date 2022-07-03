@@ -38,7 +38,7 @@ import java.lang.reflect.Constructor;
 /**
  * StubProxyFactoryWrapper
  *
- * 存根代理工厂包装器实现类
+ * 存根代理工厂包装器实现类，基于 Dubbo SPI Wrapper 机制加载。
  */
 public class StubProxyFactoryWrapper implements ProxyFactory {
 
@@ -46,6 +46,8 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     /**
      * ProxyFactory$Adaptive 对象
+     * StubProxyFactoryWrapper 基于 Dubbo SPI Wrapper 机制，所以使用 ProxyFactory 创建代理的流程，实际变成如下：
+     * StubProxyFactoryWrapper 调用ProxyFactory$Adaptive，ProxyFactory$Adaptive根据URL配置决定是调用JavassistProxyFactory还是JdkProxyFactory
      */
     private final ProxyFactory proxyFactory;
     /**
@@ -67,7 +69,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         // 获得 Service Proxy 对象
         T proxy = proxyFactory.getProxy(invoker);
         if (GenericService.class != invoker.getInterface()) { // 非泛化引用
-            // 获得 `stub` 配置项
+            // 获得 `stub` 配置项。注意，local 配置项，和 stub 配置项是等价的，目前使用 stub 而不使用 local 。
             String stub = invoker.getUrl().getParameter(Constants.STUB_KEY, invoker.getUrl().getParameter(Constants.LOCAL_KEY));
             if (ConfigUtils.isNotEmpty(stub)) {
                 Class<?> serviceType = invoker.getInterface();
@@ -87,6 +89,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
                     }
                     try {
                         // 创建 Stub 对象，使用带 Service Proxy 对象的构造方法
+                        // 这里配合stub的使用文档理解才行，https://dubbo.apache.org/zh/docs/advanced/local-stub/
                         Constructor<?> constructor = ReflectUtils.findConstructor(stubClass, serviceType);
                         proxy = (T) constructor.newInstance(new Object[]{proxy});
 
@@ -116,6 +119,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     @Override
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
+        // 服务实现的 Service ，不支持 Stub 存根。所以，虽然 <dubbo:service /> 有 stub 配置项，但是实际是没有效果的。
         return proxyFactory.getInvoker(proxy, type, url);
     }
 

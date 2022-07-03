@@ -29,6 +29,7 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.all.AllDispatcher;
  *
  * 不同的调度器实现，将操作转发到对应的线程池。
  */
+// Dubbo SPI 拓展点，默认为 "all"
 @SPI(AllDispatcher.NAME)
 public interface Dispatcher {
 
@@ -39,6 +40,7 @@ public interface Dispatcher {
      * @param url
      * @return channel handler
      */
+    // 基于 Dubbo SPI Adaptive 机制，加载对应的 ChanelHander 实现，使用 URL.dispatcher 属性
     @Adaptive({Constants.DISPATCHER_KEY, "dispather", "channel.handler"})
     // The last two parameters are reserved for compatibility with the old configuration
     ChannelHandler dispatch(ChannelHandler handler, URL url);

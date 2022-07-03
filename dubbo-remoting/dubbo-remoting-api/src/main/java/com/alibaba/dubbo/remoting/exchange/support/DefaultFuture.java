@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * DefaultFuture.
  *
- * 默认响应 Future 实现类
+ * 默认响应 Future 实现类，同时，它也是所有 DefaultFuture 的管理容器
  */
 public class DefaultFuture implements ResponseFuture {
 
@@ -94,7 +94,7 @@ public class DefaultFuture implements ResponseFuture {
      */
     private final long start = System.currentTimeMillis();
     /**
-     * 发送请求时间
+     * 发送请求的时间
      */
     private volatile long sent;
     /**
@@ -143,6 +143,9 @@ public class DefaultFuture implements ResponseFuture {
 
     /**
      * 接收响应( Response )
+     * 该方法有两处被调用
+     * 1、RemotingInvocationTimeoutScan 后台扫描调用超时任务
+     * 2、HeaderExchangeHandler         处理响应结果
      *
      * @param channel 通道
      * @param response 响应
@@ -218,7 +221,7 @@ public class DefaultFuture implements ResponseFuture {
 
     @Override
     public void setCallback(ResponseCallback callback) {
-        // 已完成，调用回调
+        // 若已经完成，调用回调
         if (isDone()) {
             invokeCallback(callback);
         } else {
@@ -243,6 +246,13 @@ public class DefaultFuture implements ResponseFuture {
         }
     }
 
+    /**
+     *
+     和 #returnFromResponse() 方法，情况一致。
+     正常返回，调用 ResponseCallback#done(result) 方法，处理结果。
+     超时异常，调用 ResponseCallback#caught(e) 方法，处理 TimeoutException 异常。
+     其他异常，调用 ResponseCallback#caught(e)` 方法，处理 RuntimeException 异常。
+     */
     private void invokeCallback(ResponseCallback c) {
         ResponseCallback callbackCopy = c;
         if (callbackCopy == null) {
@@ -340,6 +350,7 @@ public class DefaultFuture implements ResponseFuture {
             // 设置结果
             response = res;
             // 通知，唤醒等待
+            // 调用 Condition#signal() 方法，通知，唤醒 DefaultFuture#get(..) 方法的等待。
             if (done != null) {
                 done.signal();
             }

@@ -59,6 +59,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
 
     /**
      * 重连定时任务执行器
+     * 在客户端连接服务端时，会创建后台任务，定时检查连接，若断开，会进行重连。
      */
     private static final ScheduledThreadPoolExecutor reconnectExecutorService = new ScheduledThreadPoolExecutor(2, new NamedThreadFactory("DubboClientReconnectTimer", true));
     /**
@@ -279,6 +280,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         return channel.getLocalAddress();
     }
 
+    // client是否连接，其实就是判断channel是否连接
     @Override
     public boolean isConnected() {
         Channel channel = getChannel();

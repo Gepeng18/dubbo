@@ -59,6 +59,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     /**
      * 处理响应
+     * 非心跳事件响应，调用 DefaultFuture#received(channel, response) 方法，唤醒等待请求结果的线程。
      *
      * @param channel 通道
      * @param response 响应
@@ -114,7 +115,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             res.setStatus(Response.BAD_REQUEST);
             return res;
         }
-        // 使用 ExchangeHandler 处理，并返回响应
+        // 调用 ExchangeHandler#reply(channel, message) 方法，返回结果，并设置到响应( Response) 最终返回
         // find handler by message class.
         Object msg = req.getData();
         try {

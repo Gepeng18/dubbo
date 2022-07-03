@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * 通道 Buffer 抽象类
+ * 通道 Buffer 抽象类,实现 ChannelBuffer 接口，通道 Buffer 抽象类。
  */
 public abstract class AbstractChannelBuffer implements ChannelBuffer {
 

@@ -51,9 +51,11 @@ public class NettyClient extends AbstractClient {
 
     private Bootstrap bootstrap;
 
+    // 通道，有 volatile 修饰符。因为客户端可能会断开重连，需要保证多线程的可见性
     private volatile io.netty.channel.Channel channel; // volatile, please copy reference to use
 
     public NettyClient(final URL url, final ChannelHandler handler) throws RemotingException {
+        // wrapChannelHandler 包装 ChannelHandler ，实现 Dubbo 线程模型的功能
         super(url, wrapChannelHandler(url, handler));
     }
 
@@ -107,6 +109,7 @@ public class NettyClient extends AbstractClient {
         ChannelFuture future = bootstrap.connect(getConnectAddress());
         try {
             // 等待连接成功或者超时
+            // 这里传入 3000 貌似不太正确，应该传入 ChannelOption.CONNECT_TIMEOUT_MILLIS 的实际值。
             boolean ret = future.awaitUninterruptibly(3000, TimeUnit.MILLISECONDS);
             // 连接成功
             if (ret && future.isSuccess()) {

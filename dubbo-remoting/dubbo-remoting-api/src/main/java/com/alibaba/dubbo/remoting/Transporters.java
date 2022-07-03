@@ -38,6 +38,7 @@ public class Transporters {
     private Transporters() {
     }
 
+    // 绑定一个服务器
     public static Server bind(String url, ChannelHandler... handler) throws RemotingException {
         return bind(URL.valueOf(url), handler);
     }
@@ -54,9 +55,13 @@ public class Transporters {
         if (handlers.length == 1) {
             handler = handlers[0];
         } else {
+            // 若 handlers 是多个，使用 ChannelHandlerDispatcher 进行封装。
+            // 在 ChannelHandlerDispatcher 中，会循环调用 handlers ，对应的方法。
             handler = new ChannelHandlerDispatcher(handlers);
         }
         // 创建 Server 对象
+        // 基于 Dubbo SPI 机制，获得 Transporter$Adaptive 对象
+        // 在 Transporter$Adaptive 对象中，会根据 url 参数，获得对应的 Transporter 实现对象（例如， NettyTransporter）
         return getTransporter().bind(url, handler);
     }
 
@@ -64,6 +69,8 @@ public class Transporters {
         return connect(URL.valueOf(url), handler);
     }
 
+    // 连接一个服务器，即创建一个客户端
+    // 和 bind方法类似
     public static Client connect(URL url, ChannelHandler... handlers) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");

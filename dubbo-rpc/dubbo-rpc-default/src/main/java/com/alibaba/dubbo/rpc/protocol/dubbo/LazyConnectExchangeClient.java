@@ -38,6 +38,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * dubbo protocol support class.
  *
  * 支持懒连接服务器的信息交换客户端实现类
+ *
+ * 当执行request or send方法时，会查看client是否初始化，如未初始化了，则进行初始化，所以是懒连接
  */
 @SuppressWarnings("deprecation")
 final class LazyConnectExchangeClient implements ExchangeClient {

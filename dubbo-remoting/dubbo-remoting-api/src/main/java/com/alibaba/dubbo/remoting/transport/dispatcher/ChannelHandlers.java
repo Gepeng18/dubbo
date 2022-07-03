@@ -50,6 +50,8 @@ public class ChannelHandlers {
     }
 
     protected ChannelHandler wrapInternal(ChannelHandler handler, URL url) {
+        // 在这里，我们就看到了多个 ChannelHandlerDelegate 的组合。包括，第 15 行的，
+        // Dispatcher#dispatch(handler, url) 方法，实际上也是返回一个 ChannelHandlerDelegate 对象。
         return new MultiMessageHandler(
                 new HeartbeatHandler(
                         ExtensionLoader.getExtensionLoader(Dispatcher.class).getAdaptiveExtension().dispatch(handler, url)

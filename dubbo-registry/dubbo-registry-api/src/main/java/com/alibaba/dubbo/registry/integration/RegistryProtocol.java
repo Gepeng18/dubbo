@@ -323,6 +323,7 @@ public class RegistryProtocol implements Protocol {
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         // 获得真实的注册中心的 URL
+        // 我觉得这里是将registry的key给放到protocol中，为了就是将这两者整合在一起（猜测原来可以将注册中心配置到registry中，可以配置到protocol中）
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
         // 获得注册中心
         Registry registry = registryFactory.getRegistry(url);
@@ -335,7 +336,7 @@ public class RegistryProtocol implements Protocol {
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
-        // 分组聚合，参见文档 http://dubbo.io/books/dubbo-user-book/demos/group-merger.html
+        // 高级用法：分组聚合，参见文档 http://dubbo.io/books/dubbo-user-book/demos/group-merger.html
         if (group != null && group.length() > 0) {
             if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length > 1
                     || "*".equals(group)) {
@@ -370,21 +371,22 @@ public class RegistryProtocol implements Protocol {
         // all attributes of REFER_KEY
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters()); // 服务引用配置集合
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), 0, type.getName(), parameters);
-        // 向注册中心注册自己（服务消费者）
+        // do 向注册中心注册自己（服务消费者）
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false))); // 不检查的原因是，不需要检查。
         }
-        // 向注册中心订阅服务提供者 + 路由规则 + 配置规则
+        // do 向注册中心订阅服务提供者 + 路由规则 + 配置规则。
+        // 在该方法中，会循环获得到的服务体用这列表，调用 Protocol#refer(type, url) 方法，创建每个调用服务的 Invoker 对象。
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,
                         Constants.PROVIDERS_CATEGORY
                         + "," + Constants.CONFIGURATORS_CATEGORY
                         + "," + Constants.ROUTERS_CATEGORY));
 
-        // 创建 Invoker 对象
+        // do 创建 Invoker 对象
         Invoker invoker = cluster.join(directory);
-        // 向本地注册表，注册消费者
+        // do 向本地注册表，注册消费者
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;
     }

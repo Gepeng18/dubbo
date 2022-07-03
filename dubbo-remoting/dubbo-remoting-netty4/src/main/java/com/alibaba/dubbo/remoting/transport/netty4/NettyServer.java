@@ -49,14 +49,15 @@ import java.util.Map;
 /**
  * NettyServer
  *
- * Netty 服务器实现类
+ * Netty 服务器实现类， 实现 Server 接口，继承 AbstractServer 抽象类，Netty 服务器实现类。
  */
 public class NettyServer extends AbstractServer implements Server {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
 
     /**
-     * 通道集合
+     * 通道集合，连接到服务器的客户端通道集合。笔者在看 NettyChannel 时，在有 NettyChannel.channels ，
+     * 那么此处的 channels 不是重复了么？答案在 #getChannel(remoteAddress) 方法，获得指定地址的 Channel 对象
      */
     private Map<String, Channel> channels; // <ip:port, channel>
 
@@ -68,6 +69,7 @@ public class NettyServer extends AbstractServer implements Server {
     private EventLoopGroup workerGroup;
 
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
+        // 包装 ChannelHandler ，实现 Dubbo 线程模型的功能。
         super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME) /* 设置线程名到 URL 上 */));
     }
 

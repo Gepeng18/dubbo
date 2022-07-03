@@ -30,6 +30,8 @@ import java.util.regex.Matcher;
 
 /**
  * Wrapper.
+ * 负责生成provider代理类, provider调用真正的invoker类似于硬编码
+ * 详细内容见 http://svip.iocoder.cn/Dubbo/proxy-javassist/
  */
 public abstract class Wrapper {
 

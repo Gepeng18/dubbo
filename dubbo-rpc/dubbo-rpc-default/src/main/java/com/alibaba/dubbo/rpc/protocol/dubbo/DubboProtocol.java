@@ -88,15 +88,17 @@ public class DubboProtocol extends AbstractProtocol {
     //servicekey-stubmethods
     private final ConcurrentMap<String, String> stubServiceMethodsMap = new ConcurrentHashMap<String, String>();
 
+    // 负责将请求，转发到对应的 Invoker 对象，执行逻辑，返回结果。
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
+        // 用于处理服务消费者的同步调用和异步调用的请求
         @Override
         public Object reply(ExchangeChannel channel, Object message) throws RemotingException {
             if (message instanceof Invocation) {
                 Invocation inv = (Invocation) message;
                 // 获得请求对应的 Invoker 对象
                 Invoker<?> invoker = getInvoker(channel, inv);
-                // 如果是callback 需要处理高版本调用低版本的问题
+                // 如果是参数回调，callback 需要处理高版本调用低版本的问题
                 // need to consider backward-compatibility if it's a callback
                 if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
                     String methodsStr = invoker.getUrl().getParameters().get("methods");
@@ -119,7 +121,7 @@ public class DubboProtocol extends AbstractProtocol {
                 }
                 // 设置调用方的地址
                 RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
-                // 执行调用
+                // do 执行调用
                 return invoker.invoke(inv);
             }
             throw new RemotingException(channel, message.getClass().getName() + ": " + message
@@ -135,6 +137,8 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        // 在服务提供者上，有 "onconnect" 和 "ondisconnect" 配置项，在服务提供者连接或断开连接时，调用 Service 对应的方法。
+        // 目前这个配置项，在 Dubbo 文档里，暂未提及。当然，这个在实际场景下，基本没用过。
         @Override
         public void connected(Channel channel) {
             this.invoke(channel, Constants.ON_CONNECT_KEY);
@@ -241,14 +245,15 @@ public class DubboProtocol extends AbstractProtocol {
             path = inv.getAttachments().get(Constants.PATH_KEY) + "." + inv.getAttachments().get(Constants.CALLBACK_SERVICE_KEY);
             inv.getAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
         }
-        // 获得服务建
+        // do 获得服务建
         String serviceKey = serviceKey(port, path, inv.getAttachments().get(Constants.VERSION_KEY), inv.getAttachments().get(Constants.GROUP_KEY));
-        // 获得 Exporter 对象
+        // do 获得 Exporter 对象
         DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
         // 获得 Invoker 对象
         if (exporter == null) {
             throw new RemotingException(channel, "Not found exported service: " + serviceKey + " in " + exporterMap.keySet() + ", may be version or group mismatch " + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress() + ", message:" + inv);
         }
+        // do 获得 Invoker 对象。
         return exporter.getInvoker();
     }
 
@@ -401,10 +406,11 @@ public class DubboProtocol extends AbstractProtocol {
         }
     }
 
+    // 被调链为 Protocol$Adaptive => ProtocolFilterWrapper => ProtocolListenerWrapper => DubboProtocol
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         // 初始化序列化优化器
         optimizeSerialization(url);
-        // 获得远程通信客户端数组
+        // 获得远程通信客户端数组，其中getClients(url)创建了连接
         // 创建 DubboInvoker 对象
         // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
@@ -418,6 +424,10 @@ public class DubboProtocol extends AbstractProtocol {
      *
      * @param url 服务提供者 URL
      * @return 远程通信客户端
+     *
+     * connections属性的意义
+     * 默认 0 。即，对同一个远程服务器，共用同一个连接。
+     * 大于 0 。即，每个服务引用，独立每一个连接。
      */
     private ExchangeClient[] getClients(URL url) {
         // 是否共享连接
@@ -430,6 +440,7 @@ public class DubboProtocol extends AbstractProtocol {
             connections = 1;
         }
 
+        // 若开启共享连接，基于 URL 为维度共享
         // 创建连接服务提供者的 ExchangeClient 对象数组
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
@@ -461,7 +472,7 @@ public class DubboProtocol extends AbstractProtocol {
                 referenceClientMap.remove(key);
             }
         }
-        // 同步，创建 ExchangeClient 对象。
+        // 若client == null，加锁，创建 ExchangeClient 对象。
         synchronized (key.intern()) {
             // 创建 ExchangeClient 对象
             ExchangeClient exchangeClient = initClient(url);
@@ -469,7 +480,7 @@ public class DubboProtocol extends AbstractProtocol {
             client = new ReferenceCountExchangeClient(exchangeClient, ghostClientMap);
             // 添加到集合
             referenceClientMap.put(key, client);
-            // 添加到 `ghostClientMap`
+            // 从 `ghostClientMap` 中删除
             ghostClientMap.remove(key);
             return client;
         }
@@ -493,7 +504,7 @@ public class DubboProtocol extends AbstractProtocol {
         // 设置编解码器为 Dubbo ，即 DubboCountCodec
         url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
 
-        // 默认开启 heartbeat
+        // do 默认开启 heartbeat
         // enable heartbeat by default
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
 

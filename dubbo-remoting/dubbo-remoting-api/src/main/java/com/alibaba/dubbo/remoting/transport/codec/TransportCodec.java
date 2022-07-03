@@ -39,7 +39,7 @@ public class TransportCodec extends AbstractCodec {
 
     @Override
     public void encode(Channel channel, ChannelBuffer buffer, Object message) throws IOException {
-        // 获得反序列化的 ObjectOutput 对象
+        // 获得对应的 Serialization 对象，并创建用于反序列化的 ObjectOutput 对象。不同的 Serialization 实现，对应不同的 ObjectOutput 实现类
         OutputStream output = new ChannelBufferOutputStream(buffer);
         ObjectOutput objectOutput = getSerialization(channel).serialize(channel.getUrl(), output);
         // 写入 ObjectOutput

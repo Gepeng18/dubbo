@@ -43,6 +43,9 @@ public class ListenerInvokerWrapper<T> implements Invoker<T> {
      */
     private final List<InvokerListener> listeners;
 
+    /**
+     * 調用所有的listeners并执行 referred 方法
+     */
     public ListenerInvokerWrapper(Invoker<T> invoker, List<InvokerListener> listeners) {
         if (invoker == null) {
             throw new IllegalArgumentException("invoker == null");
@@ -76,6 +79,7 @@ public class ListenerInvokerWrapper<T> implements Invoker<T> {
         return invoker.isAvailable();
     }
 
+    // 并未对 #invoke(invocation) 的过程，实现监听。因此，ListenerInvokerWrapper 的 #invoke(invocation) 的实现基本等于零
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         return invoker.invoke(invocation);

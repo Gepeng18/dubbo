@@ -31,6 +31,7 @@ import com.alibaba.dubbo.remoting.exchange.support.header.HeaderExchanger;
  *
  * 数据交换者接口
  */
+// @SPI(HeaderExchanger.NAME) 注解，Dubbo SPI 拓展点，默认为 "header"，即 HeaderExchanger
 @SPI(HeaderExchanger.NAME)
 public interface Exchanger {
 
@@ -43,6 +44,7 @@ public interface Exchanger {
      * @param handler 数据交换处理器
      * @return message server 服务器
      */
+    // 基于 Dubbo SPI Adaptive 机制，加载对应的 Server 实现，使用 URL.exchanger 属性
     @Adaptive({Constants.EXCHANGER_KEY})
     ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException;
 
@@ -55,6 +57,7 @@ public interface Exchanger {
      * @param handler 数据交换处理器
      * @return message channel 客户端
      */
+    // 基于 Dubbo SPI Adaptive 机制，加载对应的 Server 实现，使用 URL.exchanger 属性
     @Adaptive({Constants.EXCHANGER_KEY})
     ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException;
 

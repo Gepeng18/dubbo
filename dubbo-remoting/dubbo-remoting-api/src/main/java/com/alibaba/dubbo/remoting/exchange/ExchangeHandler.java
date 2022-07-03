@@ -22,6 +22,7 @@ import com.alibaba.dubbo.remoting.telnet.TelnetHandler;
 
 /**
  * ExchangeHandler. (API, Prototype, ThreadSafe)
+ * 非常关键的接口
  *
  * 信息交换处理器接口
  */
@@ -29,8 +30,8 @@ public interface ExchangeHandler extends ChannelHandler, TelnetHandler {
 
     /**
      * reply.
-     *
      * 回复请求结果
+     * 返回的是请求结果。正如我们在上文看到的，将请求结果，设置到 Response.mResult 属性中
      *
      * @param channel 通道
      * @param request 请求

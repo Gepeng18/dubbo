@@ -37,6 +37,13 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
         super(handler);
     }
 
+    /**
+     * 当消息是 Decodeable 类型时，调用 #decode(message) 方法，解析消息。
+     * 当消息是 Request 类型时，调用 #decode(message) 方法，解析 data 属性。
+     * 当消息是 Response 类型时，调用 #decode(message) 方法，解析 result 属性。
+     * 调用 ChannelHandler#received(channel, message) 方法，将消息交给委托的 handler ，继续处理。
+     * 🙂 胖友是否感受到，装饰器模式的好处：通过组合的方式，实现功能的叠加。
+     */
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         if (message instanceof Decodeable) {

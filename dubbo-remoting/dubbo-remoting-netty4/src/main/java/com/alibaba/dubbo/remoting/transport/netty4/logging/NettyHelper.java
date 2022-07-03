@@ -26,6 +26,7 @@ public class NettyHelper {
 
     /**
      * 设置日志工厂，基于 Dubbo Logger 组件。
+     * 设置 Netty 日志工厂为 DubboLoggerFactory
      */
     public static void setNettyLoggerFactory() {
         InternalLoggerFactory factory = InternalLoggerFactory.getDefaultFactory();
@@ -43,6 +44,11 @@ public class NettyHelper {
 
     }
 
+    /**
+     * 在实现的每个方法中，直接调用 logger 对应的方法。
+     * 我们看到需要 FormattingTuple 和 MessageFormatter 这两个类，用于对日志内容进行格式化。
+     * 实际上，这两个类是直接从 Netty4 中拷贝出来的两个类，因为它们是 package 修饰的类，在 DubboLogger 中，无法访问到它们，所以进行复制解决。
+     */
     static class DubboLogger extends AbstractInternalLogger {
 
         /**

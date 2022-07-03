@@ -58,6 +58,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
 
     /**
      * 获得编解码器
+     * 基于 url 参数，加载对应的 Codec 实现对象。
      *
      * @param url URL
      * @return 编解码器
@@ -65,8 +66,10 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
     protected static Codec2 getChannelCodec(URL url) {
         String codecName = url.getParameter(Constants.CODEC_KEY, "telnet");
         if (ExtensionLoader.getExtensionLoader(Codec2.class).hasExtension(codecName)) { // 例如，在 DubboProtocol 中，会获得 DubboCodec
+            // 基于 Dubbo SPI 机制，加载对应的 Codec 实现对象。例如，在 DubboProtocol 中，会获得 DubboCodec 对象。
             return ExtensionLoader.getExtensionLoader(Codec2.class).getExtension(codecName);
         } else {
+            // 已经废弃了，目前 Dubbo 项目里，也没有它的拓展实现。
             return new CodecAdapter(ExtensionLoader.getExtensionLoader(Codec.class).getExtension(codecName));
         }
     }

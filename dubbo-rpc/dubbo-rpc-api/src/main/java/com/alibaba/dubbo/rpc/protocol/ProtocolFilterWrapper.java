@@ -117,9 +117,13 @@ public class ProtocolFilterWrapper implements Protocol {
         return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
     }
 
+    // 这里只是引用，最后调用invoke(invocation)实际执行
+    // InJvm 调用，invoke(invocation) 方法中，调用 Filter#(invoker, invocation) 方法，不断执行过滤逻辑。而在 Filter 中，
+    //   又不断调用 Invoker#invoker(invocation) 方法，最终最后一个 Filter ，会调用 InjvmInvoker#invoke(invocation) 方法，继续执行逻辑
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         // 注册中心
         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+            // RegistryProtocol.refer
             return protocol.refer(type, url);
         }
         // 引用服务，返回 Invoker 对象

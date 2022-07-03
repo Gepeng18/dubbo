@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * AbstractRegistryFactory. (SPI, Singleton, ThreadSafe)
  *
- * 注册中心抽象类
+ * 注册中心抽象类,就是做了一个缓存+单例
  *
  * @see com.alibaba.dubbo.registry.RegistryFactory
  */

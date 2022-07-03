@@ -31,6 +31,7 @@ public interface Codec2 {
 
     /**
      * 编码
+     * 基于 Dubbo SPI Adaptive 机制，加载对应的 Codec2 实现，使用 URL.codec 属性。
      *
      * @param channel 通道
      * @param buffer Buffer
@@ -42,6 +43,7 @@ public interface Codec2 {
 
     /**
      * 解码
+     * 基于 Dubbo SPI Adaptive 机制，加载对应的 Codec2 实现，使用 URL.codec 属性。
      *
      * @param channel 通道
      * @param buffer Buffer
@@ -53,6 +55,7 @@ public interface Codec2 {
 
     /**
      * 解码结果
+     * 解码过程中，需要解决 TCP 拆包、粘包的场景
      */
     enum DecodeResult {
         /**
@@ -60,7 +63,7 @@ public interface Codec2 {
          */
         NEED_MORE_INPUT,
         /**
-         * 忽略一些输入
+         * 忽略一些输入,暂未使用。
          */
         SKIP_SOME_INPUT
     }

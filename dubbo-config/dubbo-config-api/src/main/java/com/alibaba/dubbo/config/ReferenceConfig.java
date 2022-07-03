@@ -98,6 +98,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      *
      * 1. 可以是注册中心，也可以是服务提供者
      * 2. 可配置多个，使用 ; 分隔
+     * 3、如果没有配置，则表示从注册中心拿
      */
     // url for peer-to-peer invocation
     private String url;
@@ -453,6 +454,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             // 创建本地服务引用 URL 对象。
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
             // 引用服务，返回 Invoker 对象
+            // Protocol$Adaptive => ProtocolFilterWrapper => ProtocolListenerWrapper => InjvmProtocol
+            // 准确地说，内部是一个InjvmProtocol，然后被包装了一层又一层
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
@@ -481,7 +484,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         }
                     }
                 }
-            // 注册中心
+            // url代表直连地址，那没有配置url，就代表是从注册中心拿
             } else { // assemble URL from register center's configuration
                 // 加载注册中心 URL 数组
                 List<URL> us = loadRegistries(false);
@@ -494,7 +497,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         if (monitorUrl != null) {
                             map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                         }
-                        // 注册中心的地址，带上服务引用的配置参数
+                        // 注册中心的地址，带上服务引用的配置参数。通过这样的方式，注册中心的 URL 中，包含了服务引用的配置。
                         urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map))); // 注册中心，带上服务引用的配置参数
                     }
                 }
@@ -503,6 +506,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
 
+            // 单url代表单注册中心
             // 单 `urls` 时，引用服务，返回 Invoker 对象
             if (urls.size() == 1) {
                 // 引用服务

@@ -71,7 +71,8 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
         }
         // 设置服务提供者地址为本地
         RpcContext.getContext().setRemoteAddress(NetUtils.LOCALHOST, 0);
-        // 调用
+        // 获得到 Exporter 对象，里面就有服务提供者的 Invoker 对象。调用 Invoker#invoke(invocation) 方法，调用服务。
+        // invoke的调用过程为 ProtocolFilterWrapper -> DelegateProviderMetaDataInvoker（没作用）-> Wrapper -> serviceImpl
         return exporter.getInvoker().invoke(invocation);
     }
 

@@ -32,6 +32,8 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 
     /**
      * 通道处理器
+     * 可以看到这个类实现了ChannelHandler接口，又在构造函数中传入了ChannelHandler，
+     * 所以是个典型的【装饰器模式】
      */
     private final ChannelHandler handler;
     /**

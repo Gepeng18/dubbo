@@ -113,7 +113,7 @@ public abstract class AbstractProxyProtocol extends AbstractProtocol {
             @Override
             protected Result doInvoke(Invocation invocation) throws Throwable {
                 try {
-                    // 调用
+                    // 执行 RPC 调用
                     Result result = target.invoke(invocation);
                     // 若返回结果带有异常，并且需要抛出，则抛出异常。
                     Throwable e = result.getException();
@@ -128,6 +128,7 @@ public abstract class AbstractProxyProtocol extends AbstractProtocol {
                 } catch (RpcException e) {
                     // 若是未知异常，获得异常对应的错误码
                     if (e.getCode() == RpcException.UNKNOWN_EXCEPTION) {
+                        // 子类协议实现类，一般会覆写这个方法，实现自己异常的翻译。
                         e.setCode(getErrorCode(e.getCause()));
                     }
                     throw e;

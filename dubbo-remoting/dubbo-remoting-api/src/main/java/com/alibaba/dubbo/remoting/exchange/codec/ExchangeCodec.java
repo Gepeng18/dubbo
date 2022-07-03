@@ -67,11 +67,13 @@ public class ExchangeCodec extends TelnetCodec {
 
     @Override
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
-        if (msg instanceof Request) { // 请求
+        if (msg instanceof Request) { // 编码请求
             encodeRequest(channel, buffer, (Request) msg);
-        } else if (msg instanceof Response) { // 响应
+        } else if (msg instanceof Response) { // 编码响应
             encodeResponse(channel, buffer, (Response) msg);
-        } else { // 提交给父类( Telnet ) 处理，目前是 Telnet 命令的结果。
+        } else {
+            // 提交给父类( Telnet ) 处理，目前是 Telnet 命令的结果。
+            // 编码 Telnet 命令的结果
             super.encode(channel, buffer, msg);
         }
     }
@@ -80,6 +82,7 @@ public class ExchangeCodec extends TelnetCodec {
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
         // 读取 Header 数组
         int readable = buffer.readableBytes();
+        // 这里的 Math.min(readable, HEADER_LENGTH) ，优先考虑解析 Dubbo 协议。
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
         buffer.readBytes(header);
         // 解码
@@ -127,6 +130,8 @@ public class ExchangeCodec extends TelnetCodec {
 
         // 解析 Header + Body
         // limit input stream.
+        // 调用 #decodeBody(channel, is, header) 方法，解析 Header + Body ，根据情况，返回 Request 或 Response 。
+        // 逻辑上，是 #encodeRequest(...) 和 #encodeResponse(...) 方法的反向
         ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, len);
         try {
             return decodeBody(channel, is, header);
@@ -231,6 +236,8 @@ public class ExchangeCodec extends TelnetCodec {
 
     /**
      * 编码请求
+     * Header 部分，先写入 header 数组，再写入 Buffer 中。
+     * Body 部分，使用 Serialization 序列化 Request.data ，写入到 Buffer 中。
      *
      * @param channel 通道
      * @param buffer Buffer
@@ -263,6 +270,7 @@ public class ExchangeCodec extends TelnetCodec {
         int savedWriteIndex = buffer.writerIndex();
         buffer.writerIndex(savedWriteIndex + HEADER_LENGTH);
         ChannelBufferOutputStream bos = new ChannelBufferOutputStream(buffer);
+        // 为什么 Buffer 先写入了 Body ，再写入 Header 呢？因为 Header 中，里面 [96 - 127] 的 Body 长度，需要序列化后才得到。
         ObjectOutput out = serialization.serialize(channel.getUrl(), bos); // 序列化 Output
         if (req.isEvent()) {
             encodeEventData(channel, out, req.getData());
@@ -278,6 +286,8 @@ public class ExchangeCodec extends TelnetCodec {
         bos.close();
         // 检查 Body 长度，是否超过消息上限。
         int len = bos.writtenBytes();
+        // 笔者在这块纠结了很久，如果过长而抛出 ExceedPayloadLimitException 异常，那么 ChannelBuffer 是否重置下写入位置。
+        // 后来发现自己煞笔了，每次 ChannelBuffer 都是新创建的，所以无需重置。
         checkPayload(channel, len);
         // `[96 - 127]`：Body 的**长度**。
         Bytes.int2bytes(len, header, 12);
@@ -291,6 +301,9 @@ public class ExchangeCodec extends TelnetCodec {
 
     /**
      * 编码响应
+     * 和 #encodeRequest(chanel, buffer, request) 方法，基本一致，胖友自己瞅瞅列。主要差异点如下：
+     * status 状态。这是 Request 没有，而 Response 有的部分。
+     * 当响应的内容过长而抛出 ExceedPayloadLimitException 异常，根据条件，发送一条 Response ( status = BAD_RESPONSE ) 给请求方。
      *
      * @param channel 通道
      * @param buffer Buffer

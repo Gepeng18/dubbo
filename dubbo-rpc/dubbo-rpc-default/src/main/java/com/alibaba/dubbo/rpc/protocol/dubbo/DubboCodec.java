@@ -88,7 +88,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         byte proto = (byte) (flag & SERIALIZATION_MASK);
         Serialization s = CodecSupport.getSerialization(channel.getUrl(), proto);
         // 获得请求||响应编号
-        // get request id.
+        // do get request id.
         long id = Bytes.bytes2long(header, 4);
         // 解析响应
         if ((flag & FLAG_REQUEST) == 0) {
@@ -197,6 +197,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         return new byte[]{};
     }
 
+    // 编码data （RpcInvocation ）对象，提取需要编码的字段，并写入 ObjectOutput 中
     @Override
     protected void encodeRequestData(Channel channel, ObjectOutput out, Object data) throws IOException {
         RpcInvocation inv = (RpcInvocation) data;
@@ -220,6 +221,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         out.writeObject(inv.getAttachments());
     }
 
+    // 把 result 进行编码，写入ObjectOutput中
     @Override
     protected void encodeResponseData(Channel channel, ObjectOutput out, Object data) throws IOException {
         Result result = (Result) data;

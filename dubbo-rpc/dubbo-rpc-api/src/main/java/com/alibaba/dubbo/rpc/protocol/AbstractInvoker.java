@@ -153,12 +153,13 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         if (attachment != null && attachment.size() > 0) {
             invocation.addAttachmentsIfAbsent(attachment);
         }
-        // 添加自定义的隐式参数
+        // 添加自定义的隐式参数(用户自己指定)
         Map<String, String> context = RpcContext.getContext().getAttachments();
         if (context != null) {
             invocation.addAttachmentsIfAbsent(context);
         }
-        // 设置 `async=true` ，若为异步方法
+        // 设置 `async=true` ，若为异步方法，
+        // 因此，可以看出，异步先在invocation中设置一个attachment
         if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) {
             invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
         }

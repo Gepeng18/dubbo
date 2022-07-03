@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
  *
  * 支持失败重试的 Registry 抽象类
+ * AbstractRegistry 进行的注册、订阅等操作，更多的是修改状态，而无和注册中心实际的操作。
+ * FailbackRegistry 在 AbstractRegistry 的基础上，实现了和注册中心实际的操作，并且支持失败重试的特性。
  */
 public abstract class FailbackRegistry extends AbstractRegistry {
 
@@ -244,7 +246,6 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         if (destroyed.get()){
             return;
         }
-        // 移除出 `subscribed` 变量
         super.subscribe(url, listener);
         // 移除出 `failedSubscribed` `failedUnsubscribed` `failedNotified`
         removeFailedSubscribed(url, listener);
@@ -352,6 +353,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         super.notify(url, listener, urls);
     }
 
+    // 完全覆盖父类方法( 即不像前面几个方法，会调用父类的方法 )，
+    // 将需要注册和订阅的 URL 添加到 failedRegistered failedSubscribed 属性中。
+    // 这样，在 #retry() 方法中，会重试进行连接。
     @Override
     protected void recover() throws Exception {
         // register 恢复注册，添加到 `failedRegistered` ，定时重试
@@ -380,7 +384,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     }
 
     /**
-     * 重试
+     * 重试，遍历五个 failedXXX 属性，重试对应的操作。
      */
     // Retry the failed actions
     protected void retry() {

@@ -55,6 +55,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
             return invoker.equals(args[0]);
         }
         // RPC 调用
+        // 调用 Result#recreate() 方法，回放调用结果
         return invoker.invoke(new RpcInvocation(method, args)).recreate();
     }
 

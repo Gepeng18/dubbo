@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ExchangeServerImpl
+ * 是 HeaderExchangeChannel + HeaderExchangeClient 的综合。
  *
  * 基于消息头部( Header )的信息交换服务器实现类
  */
@@ -88,7 +89,8 @@ public class HeaderExchangeServer implements ExchangeServer {
         if (heartbeatTimeout < heartbeat * 2) {
             throw new IllegalStateException("heartbeatTimeout < heartbeatInterval * 2");
         }
-        // 发起心跳定时器
+        // 发起心跳定时器，可见，server，client都需要心跳定时器
+        // 差异，Server 持有多条 Client 连接的 Channel ，所以通过 ChannelProvider 返回的是多条。
         startHeatbeatTimer();
     }
 
@@ -119,12 +121,13 @@ public class HeaderExchangeServer implements ExchangeServer {
 
     @Override
     public void close(final int timeout) {
-        // 关闭
+        // 标记正在关闭
         startClose();
         if (timeout > 0) {
             final long max = (long) timeout;
             final long start = System.currentTimeMillis();
-            // 发送 READONLY 事件给所有 Client ，表示 Server 不可读了。
+            // 发送 READONLY 事件给所有 Client ，表示 Server 不可读了,避免不断有新的消息接收到
+            // 这里咋起作用的呢？ 见 DubboInvoker的isAvailable()，即使 client 处于连接中，但是 Server 处于正在关闭中，也算不可用，不进行发送请求( 消息 )。
             if (getUrl().getParameter(Constants.CHANNEL_SEND_READONLYEVENT_KEY, true)) {
                 sendChannelReadOnlyEvent();
             }
@@ -139,7 +142,7 @@ public class HeaderExchangeServer implements ExchangeServer {
         }
         // 关闭心跳定时器
         doClose();
-        // 关闭服务器
+        // 真正关闭服务器
         server.close(timeout);
     }
 

@@ -47,7 +47,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
     private static final String CHANNEL_KEY = HeaderExchangeChannel.class.getName() + ".CHANNEL";
 
     /**
-     * 通道
+     * 通道，其实就是对channe的【装饰】, such as nettyChannel
      */
     private final Channel channel;
     /**
@@ -72,6 +72,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         if (ch == null) {
             return null;
         }
+        // 表明每个channel只能创建一次，根据channel中的一个属性来进行约束
         HeaderExchangeChannel ret = (HeaderExchangeChannel) ch.getAttribute(CHANNEL_KEY);
         if (ret == null) {
             ret = new HeaderExchangeChannel(ch);
@@ -123,6 +124,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
 
     @Override
     public ResponseFuture request(Object request, int timeout) throws RemotingException {
+        // 若已经关闭，不再允许发起新的请求。
         if (closed) {
             throw new RemotingException(this.getLocalAddress(), null, "Failed to send request " + request + ", cause: The channel " + this + " is closed!");
         }
@@ -141,6 +143,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
             throw e;
         }
         // 返回 DefaultFuture 对象
+        // 从代码的形式上来说，有点类似线程池提交任务，返回 Future 对象
         return future;
     }
 
@@ -161,6 +164,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
     // graceful close
     @Override
     public void close(int timeout) {
+        // 标记 closed = true ，避免发起新的请求。
         if (closed) {
             return;
         }
@@ -168,6 +172,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         // 等待请求完成
         if (timeout > 0) {
             long start = System.currentTimeMillis();
+            // 判断已发起的已经是否已经都响应了。若否，等待完成或超时。
             while (DefaultFuture.hasFuture(channel) && System.currentTimeMillis() - start < timeout) {
                 try {
                     Thread.sleep(10);

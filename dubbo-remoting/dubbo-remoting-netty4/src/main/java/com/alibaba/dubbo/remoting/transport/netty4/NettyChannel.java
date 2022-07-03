@@ -33,23 +33,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * NettyChannel.
+ * NettyChannel，实现 AbstractChannel 抽象类，封装 Netty Channel 的通道实现类。
+ * 和 HeaderExchangeChannel 很类似。
  */
 final class NettyChannel extends AbstractChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyChannel.class);
 
     /**
-     * 通道集合
+     * 通道集合，静态属性
+     * 在实际 Netty Handler 里（例如下面我们会看到的 NettyServerHandler 和 NettyClientHandler），每个方法参数里，传递的是 io.netty.channel.Channel 对象。通过 NettyChannel.channelMap 中，获得对应的 NettyChannel 对象。
      */
     private static final ConcurrentMap<io.netty.channel.Channel, NettyChannel> channelMap = new ConcurrentHashMap<Channel, NettyChannel>();
 
     /**
-     * 通道
+     * 通道。NettyChannel 是传入 channel 属性的装饰器，每个实现的方法，都会调用 channel
      */
     private final io.netty.channel.Channel channel;
     /**
-     * 属性集合
+     * 属性集合。注意，setAttribute(...) 等方法，使用的是该属性，而不是 io.netty.channel.Channel 的
      */
     private final Map<String, Object> attributes = new ConcurrentHashMap<String, Object>();
 
@@ -122,7 +124,7 @@ final class NettyChannel extends AbstractChannel {
         try {
             // 发送消息
             ChannelFuture future = channel.writeAndFlush(message);
-            // 等待发送成功
+            // 若需要等待发送成功( sent = true )，等待直到成功或超时
             if (sent) {
                 timeout = getUrl().getPositiveParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
                 success = future.await(timeout);
@@ -169,6 +171,7 @@ final class NettyChannel extends AbstractChannel {
             if (logger.isInfoEnabled()) {
                 logger.info("Close netty channel " + channel);
             }
+            // 最后一步才关闭真正的通道，避免中间状态
             channel.close();
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);

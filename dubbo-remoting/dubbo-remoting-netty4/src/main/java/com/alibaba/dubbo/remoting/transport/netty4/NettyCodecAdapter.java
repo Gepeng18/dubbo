@@ -32,6 +32,7 @@ import java.util.List;
 
 /**
  * NettyCodecAdapter.
+ * Netty 编解码适配器，将 Dubbo 编解码器 适配成 Netty4 的编码器和解码器
  */
 final class NettyCodecAdapter {
 

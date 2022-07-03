@@ -25,6 +25,9 @@ import io.netty.channel.ChannelPromise;
 
 /**
  * NettyClientHandler
+ * NettyClientHandler 的处理方式，和 NettyServerHandler 大体一致，但是也存在一定的差异，
+ * 以 #channelActive(ChannelHandlerContext) 方法举例子，
+ * 不同于 NettyServerHandler 的该方法，会提交给 handler 继续处理。因为，客户端不会被连接，无需做连入 Channel 的管理。
  */
 @io.netty.channel.ChannelHandler.Sharable
 public class NettyClientHandler extends ChannelDuplexHandler {

@@ -40,6 +40,7 @@ public interface Transporter {
      * Bind a server.
      *
      * 绑定一个服务器
+     * 基于 Dubbo SPI Adaptive 机制，加载对应的 Server 实现，使用 URL.server 或 URL.transporter 属性。
      *
      * @param url     server url
      * @param handler 通道处理器
@@ -54,6 +55,7 @@ public interface Transporter {
      * Connect to a server.
      *
      * 连接一个服务器，即创建一个客户端
+     * 基于 Dubbo SPI Adaptive 机制，加载对应的 Server 实现，使用 URL.server 或 URL.transporter 属性。
      *
      * @param url     server url 服务器地址
      * @param handler 通道处理器

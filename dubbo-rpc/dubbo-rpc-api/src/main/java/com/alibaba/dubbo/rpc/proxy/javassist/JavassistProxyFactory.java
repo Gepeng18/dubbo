@@ -33,6 +33,7 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
 
     @SuppressWarnings("unchecked")
     public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
+        // 通过 InvokerInvocationHandler ，可以实现 Proxy 和真正的逻辑解耦。
         return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));
     }
 

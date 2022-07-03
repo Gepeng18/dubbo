@@ -51,7 +51,7 @@ public class HeaderExchangeClient implements ExchangeClient {
      */
     private static final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(2, new NamedThreadFactory("dubbo-remoting-client-heartbeat", true));
     /**
-     * 客户端
+     * 客户端，such as nettyClient
      */
     private final Client client;
     /**
@@ -88,6 +88,8 @@ public class HeaderExchangeClient implements ExchangeClient {
             throw new IllegalStateException("heartbeatTimeout < heartbeatInterval * 2");
         }
         // 发起心跳定时器
+        // 为什么需要有心跳功能呢？
+        // 心跳间隔，对于长连接，当物理层断开时，比如拔网线，TCP的FIN消息来不及发送，对方收不到断开事件，此时需要心跳来帮助检查连接是否已断开
         if (needHeartbeat) {
             startHeatbeatTimer();
         }
